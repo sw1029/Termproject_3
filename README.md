@@ -20,7 +20,7 @@ Termproject_{조}/
 │
 ├── src/                                 # 애플리케이션 소스 코드
 │   ├── classifier.ipynb         *# --- LLM 분류기 실험·파인튜닝·ONNX 추출 노트북
-│   ├── chatbot_ui.py            *# --- Streamlit UI: 실시간 대화 + 시각화
+│   ├── chatbot_ui.py            *# --- Flask 기반 web UI: 실시간 대화 + 시각화
 │   ├── realtime_model.py        *# --- FastAPI 서버: 분류→RAG→응답 REST 엔드포인트
 │   │
 │   ├── crawlers/                        # 항목별 크롤러 5종
@@ -86,7 +86,7 @@ Termproject_{조}/
 | 파일 | 주요 클래스/함수 | 설명 |
 |------|-----------------|------|
 | **`classifier.ipynb`** | - `train_classifier()`<br>- `evaluate()`<br>- `export_onnx()` | ✅ **노트북**<br>1) 사전학습 Ko-E5 등 임베딩 → 라벨 0-4 분류기 파인튜닝<br>2) `evaluate()`로 검증 F1 출력<br>3) `export_onnx()`로 추론용 ONNX 저장 |
-| **`chatbot_ui.py`** | `ChatApp` (Streamlit 상위 클래스) | - 세션 스테이트 관리(`st.session_state["history"]`)<br>- FastAPI 백엔드 호출(`/answer`, `/predict`)<br>- 답변·출처・Diff 하이라이트 렌더링 |
+| **`chatbot_ui.py`** | `ChatApp` streamlip을 사용하지 않고 Flask 기반 web ui 구성 | - 세션 스테이트 관리(`st.session_state["history"]`)<br>- FastAPI 백엔드 호출(`/answer`, `/predict`)<br>- 답변·출처・Diff 하이라이트 렌더링 |
 | **`realtime_model.py`** | `FastAPI()` 인스턴스<br>`router = APIRouter()`<br>`RAGService` 클래스 | - `/predict` : 0-4 라벨 반환<br>- `/answer` : 라우팅→RAG→답변 JSON 스트림<br>- `RAGService` 내부에서 **HybridRetriever · AnswerGenerator** 호출 |
 
 ---
