@@ -173,5 +173,5 @@ Streamlit(chatbot_ui.py) ───┘
 - **크롤러**가 원본을 수집해 `data/raw/` 업데이트  
 - `build_index.py` 가 주기적으로 벡터/BM25 인덱스를 재생성  
 - `realtime_model.py` 는 REST API 층에서 `rag_pipeline`을 호출  
-- Streamlit UI·CLI·테스트 모두 같은 REST 인터페이스를 소비  
+- Flask web UI·CLI·테스트 모두 같은 REST 인터페이스를 소비  
 
