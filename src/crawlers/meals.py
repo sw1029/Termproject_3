@@ -12,7 +12,13 @@ class MealsCrawler(BaseCrawler):
         super().__init__(out_dir)
         self.date = date or datetime.now().strftime('%Y%m%d')
 
+    def _is_weekend(self) -> bool:
+        dt = datetime.strptime(self.date, '%Y%m%d')
+        return dt.weekday() >= 5
+
     def fetch(self) -> str:
+        if self._is_weekend():
+            return ''
         d = datetime.strptime(self.date, '%Y%m%d').strftime('%Y.%m.%d')
         params = {
             'searchYmd': d,
@@ -27,6 +33,9 @@ class MealsCrawler(BaseCrawler):
         return resp.text
 
     def parse(self, raw: str):
+        if self._is_weekend():
+            return [{'menu': '주말'}]
+
         tree = html.fromstring(raw)
         table = tree.xpath("//table[contains(@class,'menu-tbl')]")
         if not table:
@@ -53,6 +62,20 @@ class MealsCrawler(BaseCrawler):
                     'menu': menu or '운영안함'
                 })
         return results
+
+    def save(self, items):  # type: ignore[override]
+        """Save results as <date>.json with crawl timestamp."""
+        from datetime import datetime
+        import json
+
+        path = self.out_dir / f'{self.date}.json'
+        payload = {
+            'date': self.date,
+            'crawled_at': datetime.now().strftime('%Y-%m-%d'),
+            'items': list(items),
+        }
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
 
 if __name__ == '__main__':
     crawler = MealsCrawler(Path('data/raw/meals'))
