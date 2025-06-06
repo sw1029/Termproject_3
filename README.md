@@ -46,6 +46,10 @@ Termproject_{3}/
 │   │   └── evaluate_rag.py      # --- Ragas recall/faithfulness 메트릭 계산
 │   │
 │   └── __init__.py
+├── webui/                              # Flask‑SocketIO 채팅 UI
+│   ├── app.py                 # --- 실시간 채팅 웹 서버
+│   ├── templates/index.html   # --- 기본 채팅 창 템플릿
+│   └── static/                # --- JS/CSS 정적 리소스
 │
 ├── model/
 │   └── model.bin               *# --- 임베딩(예: KoE5) 파인튜닝 가중치

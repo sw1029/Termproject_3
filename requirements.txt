@@ -8,3 +8,4 @@ pydantic
 lxml
 pdfplumber
 beautifulsoup4
+flask_socketio
