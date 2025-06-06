@@ -47,7 +47,17 @@ def generate_answer(question: str) -> str:
         new_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in new_items}
         diff = [json.loads(s) for s in new_set - prev_set]
         if diff:
-            return f"셔틀버스 정보가 {len(diff)}건 업데이트되었습니다."
+            route_diff = [d for d in diff if d.get('type') == 'route']
+            sched_diff = [d for d in diff if d.get('type') == 'schedule']
+            parts = []
+            if route_diff:
+                sample = '; '.join(' '.join(r.get('row', [])) for r in route_diff[:3])
+                parts.append(f"노선 {len(route_diff)}건({sample})")
+            if sched_diff:
+                sample = '; '.join(' '.join(r.get('row', [])) for r in sched_diff[:3])
+                parts.append(f"시간표 {len(sched_diff)}건({sample})")
+            msg = '; '.join(parts)
+            return f"셔틀버스 정보가 업데이트되었습니다: {msg} 등"
         return "변경된 셔틀버스 정보가 없습니다."
     bus_type = _parse_type(question)
 
