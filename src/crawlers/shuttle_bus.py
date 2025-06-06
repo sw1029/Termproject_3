@@ -10,6 +10,7 @@ class ShuttleBusCrawler(BaseCrawler):
     def fetch(self) -> str:
         resp = requests.get(self.URL, timeout=10)
         resp.raise_for_status()
+        resp.encoding = resp.apparent_encoding or 'utf-8'
         return resp.text
 
     def parse(self, raw: str):
