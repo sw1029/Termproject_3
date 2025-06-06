@@ -1,3 +1,6 @@
+https://plus.cnu.ac.kr/html/kr/sub05/sub05_050403.html
+
+
 /html/body/div[2]/div[3]/div[2]/div[2]/div[2]/div/table[1]/colgroup
 : 셔틀버스 운행 시간표
 
