@@ -8,10 +8,20 @@ API_URL = "http://localhost:8000"
 LOG_PATH = Path("outputs/chat_output.json")
 
 def append_log(record: dict):
+    """Append a chat record to ``chat_output.json`` using a JSON array."""
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with LOG_PATH.open("a", encoding="utf-8") as f:
-        json.dump(record, f, ensure_ascii=False)
-        f.write("\n")
+    records = []
+    if LOG_PATH.exists():
+        text = LOG_PATH.read_text(encoding="utf-8").strip()
+        if text:
+            try:
+                data = json.loads(text)
+                records = data if isinstance(data, list) else [data]
+            except json.JSONDecodeError:
+                records = [json.loads(line) for line in text.splitlines() if line.strip()]
+    records.append(record)
+    with LOG_PATH.open("w", encoding="utf-8") as f:
+        json.dump(records, f, ensure_ascii=False, indent=2)
 
 HTML = """
 <!doctype html>
@@ -42,7 +52,15 @@ def index():
 def history():
     if not LOG_PATH.exists():
         return jsonify([])
-    items = [json.loads(line) for line in LOG_PATH.read_text().splitlines() if line]
+    text = LOG_PATH.read_text(encoding="utf-8").strip()
+    if not text:
+        return jsonify([])
+    try:
+        items = json.loads(text)
+        if not isinstance(items, list):
+            items = [items]
+    except json.JSONDecodeError:
+        items = [json.loads(line) for line in text.splitlines() if line.strip()]
     return jsonify(items)
 
 if __name__ == '__main__':
