@@ -1,11 +1,32 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 import requests
+import json
+from pathlib import Path
 
 API_URL = "http://localhost:8000"
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+QUESTIONS_PATH = Path("outputs/web_questions.json")
+
+
+def append_question(question: str):
+    """Store ``question`` in ``web_questions.json`` as a JSON array."""
+    QUESTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    items = []
+    if QUESTIONS_PATH.exists():
+        text = QUESTIONS_PATH.read_text(encoding="utf-8").strip()
+        if text:
+            try:
+                data = json.loads(text)
+                items = data if isinstance(data, list) else [data]
+            except json.JSONDecodeError:
+                items = [json.loads(line) for line in text.splitlines() if line.strip()]
+    items.append({"question": question})
+    with QUESTIONS_PATH.open("w", encoding="utf-8") as f:
+        json.dump(items, f, ensure_ascii=False, indent=2)
 
 @app.route('/')
 def index():
@@ -14,6 +35,7 @@ def index():
 @socketio.on('user_message')
 def handle_user_message(data):
     user_msg = data.get('message', '')
+    append_question(user_msg)
     try:
         resp = requests.post(f"{API_URL}/answer", json={"question": user_msg}, timeout=10)
         if resp.ok:

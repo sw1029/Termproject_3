@@ -39,10 +39,20 @@ classifier = SimpleClassifier()
 LOG_PATH = Path("outputs/realtime_output.json")
 
 def append_log(record: dict):
+    """Append a record to ``realtime_output.json`` using a JSON array format."""
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with LOG_PATH.open("a", encoding="utf-8") as f:
-        json.dump(record, f, ensure_ascii=False)
-        f.write("\n")
+    records = []
+    if LOG_PATH.exists():
+        text = LOG_PATH.read_text(encoding="utf-8").strip()
+        if text:
+            try:
+                data = json.loads(text)
+                records = data if isinstance(data, list) else [data]
+            except json.JSONDecodeError:
+                records = [json.loads(line) for line in text.splitlines() if line.strip()]
+    records.append(record)
+    with LOG_PATH.open("w", encoding="utf-8") as f:
+        json.dump(records, f, ensure_ascii=False, indent=2)
 
 class Query(BaseModel):
     question: str

@@ -151,6 +151,7 @@ Termproject_{3}/
 | `cls_output.json` | 분류기 데모·배치 추론 결과 로그 |
 | `chat_output.json` | Streamlit UI 대화 세션 기록 |
 | `realtime_output.json` | FastAPI `/answer` 호출 로그 (요청·응답·latency) |
+| `web_questions.json` | 웹 UI에서 입력된 질문 기록 |
 
 ---
 
