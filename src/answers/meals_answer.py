@@ -5,6 +5,11 @@ from datetime import datetime
 from ..crawlers.meals import MealsCrawler
 from ..retrieval.rag_pipeline import HybridRetriever
 
+
+def _is_weekend(date_str: str) -> bool:
+    dt = datetime.strptime(date_str, "%Y%m%d")
+    return dt.weekday() >= 5
+
 OUT_DIR = Path('data/raw/meals')
 
 
@@ -64,6 +69,9 @@ def generate_answer(question: str) -> str:
     path = OUT_DIR / f'{date}.json'
     items = _load_items(path)
 
+    if _is_weekend(date):
+        return "주말에는 운영하지 않습니다."
+
     if _has_update_request(question):
         prev_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in items}
         crawler = MealsCrawler(OUT_DIR, date)
@@ -105,6 +113,8 @@ def generate_answer(question: str) -> str:
         return f"{prefix} 식단은 {menus} 등입니다."
 
     if items:
+        if all(it.get('menu') == '주말' for it in items):
+            return "주말에는 운영하지 않습니다."
         sample = ', '.join(it.get('menu', '') for it in items[:3])
         return f"식단은 {sample} 등입니다."
     fb = _search_fallback(question)

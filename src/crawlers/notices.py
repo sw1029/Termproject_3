@@ -140,6 +140,16 @@ class NoticeCrawler(BaseCrawler):
     LINKS_FILE = Path("TODO_dir/cnu_crawler/data/links.txt")
 
     def fetch(self) -> List[Tuple[str, str, str]]:
+        """Load department link list.
+
+        The original project expected ``LINKS_FILE`` to exist under
+        ``TODO_dir/cnu_crawler``.  When the file is missing (for example in a
+        reduced test environment) we simply return an empty list so that the
+        caller can handle the absence of data gracefully rather than raising a
+        ``FileNotFoundError``.
+        """
+        if not self.LINKS_FILE.exists():
+            return []
         return load_links(self.LINKS_FILE)
 
     def parse(self, links: Iterable[Tuple[str, str, str]]) -> List[dict]:
