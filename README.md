@@ -26,7 +26,7 @@ Termproject_{3}/
 │   ├── crawlers/                        # 항목별 크롤러 5종
 │   │   ├── __init__.py          # --- 패키지 초기화
 │   │   ├── academic_calendar.py # --- plus.cnu.ac.kr 학사일정 HTML/PDF 파싱
-│   │   ├── notices.py           # --- 학과·대학 공지사항 크롤링 + diff 감지
+│   │   ├── notices.py           # --- 학과·대학 공지사항 links.txt 기반 크롤링
 │   │   ├── shuttle_bus.py       # --- 셔틀버스 시간표·변경 공지 수집
 │   │   ├── graduation_req.py    # --- 졸업요건 페이지/문서 스크래핑
 │   │   └── meals.py             # --- 학식·교직원 식단표 크롤링
@@ -98,7 +98,7 @@ Termproject_{3}/
 | 파일 | 주요 클래스/함수 | 설명 |
 |------|-----------------|------|
 | `academic_calendar.py` | `AcademicCalendarCrawler(BaseCrawler)` | - 학사일정 **HTML 표 + PDF** 다운로드<br>- 월/일/이벤트 파싱 → `data/raw/…/academic.json` |
-| `notices.py` | `NoticeCrawler(BaseCrawler)`<br>`diff_notice(prev, curr)` | - 단과대·학과 **공지 게시판** 순회<br>- Body HTML → Markdown 정규화<br>- `diff_notice()`로 내용 변경 감지 & `notice_changes` 레코드 생성 |
+| `notices.py` | `NoticeCrawler(BaseCrawler)` | - `TODO_dir/cnu_crawler/data/links.txt`에 정의된 학과·대학 **공지 게시판**을 순회<br>- Generic 스크레이퍼로 제목·URL·게시일만 추출해 `data/raw/notices/…/*.csv` 저장 |
 | `shuttle_bus.py` | `ShuttleBusCrawler(BaseCrawler)` | - 셔틀 운행표∙변경 공지 크롤링<br>- 시간표 CSV·이미지 OCR 지원 |
 | `graduation_req.py` | `GraduationRequirementCrawler(BaseCrawler)` | - 졸업요건 PDF/웹 테이블 스크랩<br>- `compare_versions()`로 연도별 차이 추적 |
 | `meals.py` | `MealsCrawler(BaseCrawler)` | - 학식·교직원식단 **주간 표** 파싱<br>- 식당·식사타입별 칼로리/알러지 정보 정규화 |
