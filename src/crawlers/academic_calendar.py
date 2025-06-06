@@ -9,8 +9,9 @@ class AcademicCalendarCrawler(BaseCrawler):
     BASE_URL = 'https://plus.cnu.ac.kr/_prog/academic_calendar/'
 
     def __init__(self, out_dir: Path, year: int | None = None):
-        super().__init__(out_dir)
         self.year = year or datetime.now().year
+        out_dir = Path(out_dir) / str(self.year)
+        super().__init__(out_dir)
 
     def fetch(self) -> str:
         params = {

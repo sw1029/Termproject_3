@@ -23,7 +23,7 @@ run_and_sample() {
   echo "-----"
 }
 
-run_and_sample src.crawlers.academic_calendar data/raw/academic_calendar/data.json
+run_and_sample src.crawlers.academic_calendar "data/raw/academic_calendar/*/data.json"
 run_and_sample src.crawlers.shuttle_bus data/raw/shuttle_bus/data.json
 run_and_sample src.crawlers.graduation_req data/raw/graduation_req/data.csv
 run_and_sample src.crawlers.meals "data/raw/meals/*.json"

@@ -18,17 +18,26 @@ def _load_items(path: Path):
             return []
 
 
-def _parse_month_day(q: str):
-    """Extract month and day from question if present."""
+def _parse_year_month_day(q: str):
+    """Extract year, month and day from question if present."""
+    year = None
+    m = re.search(r"(20\d{2})\s*년", q)
+    if m:
+        year = int(m.group(1))
+
+    month = day = None
     m = re.search(r"(\d{1,2})\s*월\s*(\d{1,2})\s*일", q)
     if not m:
         m = re.search(r"(\d{1,2})월(\d{1,2})일", q)
     if m:
-        return int(m.group(1)), int(m.group(2))
+        month = int(m.group(1))
+        day = int(m.group(2))
+        return year, month, day
     m = re.search(r"(\d{1,2})\s*월", q)
     if m:
-        return int(m.group(1)), None
-    return None, None
+        month = int(m.group(1))
+        return year, month, None
+    return year, None, None
 
 
 def _has_update_request(q: str) -> bool:
@@ -45,12 +54,14 @@ def _search_fallback(question: str) -> str | None:
 
 
 def generate_answer(question: str) -> str:
-    path = OUT_DIR / 'data.json'
+    year, month, day = _parse_year_month_day(question)
+    year = year or datetime.now().year
+    path = OUT_DIR / str(year) / 'data.json'
     items = _load_items(path)
 
     if _has_update_request(question):
         prev_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in items}
-        crawler = AcademicCalendarCrawler(OUT_DIR)
+        crawler = AcademicCalendarCrawler(OUT_DIR, year)
         crawler.run()
         new_items = _load_items(path)
         new_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in new_items}
@@ -59,8 +70,6 @@ def generate_answer(question: str) -> str:
             events = ', '.join(f"{d['month']} {d['date']} {d['event']}" for d in diff[:3])
             return f"새로운 학사일정이 업데이트되었습니다: {events} 등"
         return "최근 학사일정 변동 사항이 없습니다."
-
-    month, day = _parse_month_day(question)
 
     def _filter(records: list[dict]) -> list[str]:
         if month is None:
@@ -74,13 +83,13 @@ def generate_answer(question: str) -> str:
 
     matches = _filter(items)
     if not matches:
-        crawler = AcademicCalendarCrawler(OUT_DIR)
+        crawler = AcademicCalendarCrawler(OUT_DIR, year)
         crawler.run()
         items = _load_items(path)
         matches = _filter(items)
 
     if matches:
-        pre = f"{month}월"
+        pre = f"{year}년 {month}월"
         if day is not None:
             pre += f" {day}일"
         sample = ', '.join(matches[:3])
@@ -89,4 +98,4 @@ def generate_answer(question: str) -> str:
     fb = _search_fallback(question)
     if fb:
         return fb
-    return f"{month}월 {day or ''} 학사일정 정보가 없습니다.".strip()
+    return f"{year}년 {month or ''}월 {day or ''} 학사일정 정보가 없습니다.".strip()
