@@ -25,6 +25,6 @@ run_and_sample() {
 
 run_and_sample src.crawlers.academic_calendar data/raw/academic_calendar/data.json
 run_and_sample src.crawlers.shuttle_bus data/raw/shuttle_bus/data.json
-run_and_sample src.crawlers.graduation_req data/raw/graduation_req/data.json
+run_and_sample src.crawlers.graduation_req data/raw/graduation_req/data.csv
 run_and_sample src.crawlers.meals "data/raw/meals/*.json"
 run_and_sample src.crawlers.notices "data/raw/notices/*.csv"
