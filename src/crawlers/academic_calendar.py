@@ -1,14 +1,40 @@
 from pathlib import Path
+from datetime import datetime
+import requests
+from bs4 import BeautifulSoup
+
 from .base import BaseCrawler
 
 class AcademicCalendarCrawler(BaseCrawler):
-    def fetch(self):
-        # TODO: implement actual fetching logic
-        return ''
+    BASE_URL = 'https://plus.cnu.ac.kr/_prog/academic_calendar/'
 
-    def parse(self, raw):
-        # TODO: parse calendar HTML/PDF
-        return []
+    def __init__(self, out_dir: Path, year: int | None = None):
+        super().__init__(out_dir)
+        self.year = year or datetime.now().year
+
+    def fetch(self) -> str:
+        params = {
+            'site_dvs_cd': 'kr',
+            'menu_dvs_cd': '05020101',
+            'year': str(self.year),
+        }
+        resp = requests.get(self.BASE_URL, params=params, timeout=10)
+        resp.raise_for_status()
+        return resp.text
+
+    def parse(self, raw: str):
+        soup = BeautifulSoup(raw, 'html.parser')
+        results = []
+        for box in soup.select('div.calen_box'):
+            month_kor = box.select_one('div.fl_month strong')
+            if not month_kor:
+                continue
+            month_txt = month_kor.get_text(strip=True)
+            for li in box.select('div.fr_list li'):
+                date_text = li.select_one('strong').get_text(strip=True)
+                desc = li.select_one('span.list').get_text(strip=True)
+                results.append({'month': month_txt, 'date': date_text, 'event': desc})
+        return results
 
 if __name__ == '__main__':
     crawler = AcademicCalendarCrawler(Path('data/raw/academic_calendar'))
