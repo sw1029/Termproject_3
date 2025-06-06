@@ -20,6 +20,7 @@ class AcademicCalendarCrawler(BaseCrawler):
         }
         resp = requests.get(self.BASE_URL, params=params, timeout=10)
         resp.raise_for_status()
+        resp.encoding = resp.apparent_encoding or 'utf-8'
         return resp.text
 
     def parse(self, raw: str):
