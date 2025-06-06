@@ -1,25 +1,43 @@
 from pathlib import Path
+from difflib import SequenceMatcher
 import pandas as pd
 import re
-from difflib import SequenceMatcher
 
 from ..crawlers.graduation_req import GraduationRequirementCrawler
 
-OUT_DIR = Path('data/raw/graduation_req')
+OUT_DIR = Path("data/raw/graduation_req")
 
 
-def _load_df() -> pd.DataFrame:
-    path = OUT_DIR / 'data.csv'
-    if not path.exists():
-        return pd.DataFrame()
-    try:
-        return pd.read_csv(path)
-    except Exception:
-        return pd.DataFrame()
+COLS = [
+    "대학명",
+    "학과명",
+    "구분",
+    "기초(필수)",
+    "균형(인문학)",
+    "균형(사회과학)",
+    "균형(자연과학)",
+    "균형(필수)",
+    "소양(선택)",
+    "소양(필수)",
+    "교양 소계",
+    "전공 기초",
+    "전공 핵심",
+    "전공 심화",
+    "전공 소계",
+    "일반 선택",
+    "졸업 학점(총계)",
+    "비고",
+    "year",
+]
+
+
+def _parse_year(q: str) -> int | None:
+    m = re.search(r"(20\d{2})", q)
+    return int(m.group(1)) if m else None
 
 
 def _parse_dept(q: str) -> str | None:
-    m = re.search(r'([\w가-힣]+(?:학과|학부|대학원|대학))', q)
+    m = re.search(r"([\w가-힣]+(?:학과|학부|대학원|대학))", q)
     return m.group(1) if m else None
 
 
@@ -27,48 +45,97 @@ def _similar(a: str, b: str) -> float:
     return SequenceMatcher(None, a, b).ratio()
 
 
+def _find_best_dept(df: pd.DataFrame, query: str) -> str | None:
+    """Return department name with highest similarity to ``query``."""
+    best_score = 0.0
+    best_dept = None
+    for name in df["학과명"].dropna().unique():
+        score = _similar(query, str(name))
+        if score > best_score:
+            best_score = score
+            best_dept = name
+    return best_dept if best_score >= 0.5 else None
+
+
+def _load_year_df(year: int) -> pd.DataFrame:
+    """Return cleaned DataFrame for the given year.
+
+    The function first looks for a cached CSV file under ``OUT_DIR``. If the
+    file is missing, the PDF for the requested year is parsed and the result is
+    cached for future use.
+    """
+    csv_path = OUT_DIR / f"{year}.csv"
+    if csv_path.exists():
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception:
+            df = pd.DataFrame()
+    else:
+        crawler = GraduationRequirementCrawler(OUT_DIR, year=year)
+        try:
+            df = crawler.parse(crawler.fetch())
+        except FileNotFoundError:
+            return pd.DataFrame()
+        if not df.empty:
+            OUT_DIR.mkdir(parents=True, exist_ok=True)
+            df.to_csv(csv_path, index=False, encoding="utf-8-sig")
+
+    if df.empty or len(df.columns) < len(COLS):
+        return pd.DataFrame()
+
+    df = df.iloc[3:].reset_index(drop=True)
+    df.columns = COLS
+    df["대학명"] = df["대학명"].ffill()
+    df["학과명"] = df["학과명"].ffill()
+    return df
+
+
 def _has_update_request(q: str) -> bool:
-    keywords = ['변동', '업데이트', '바뀐', '변경']
+    keywords = ["변동", "업데이트", "바뀐", "변경"]
     return any(k in q for k in keywords)
 
 
 def generate_answer(question: str) -> str:
-    prev_df = _load_df()
-    if _has_update_request(question):
-        crawler = GraduationRequirementCrawler(OUT_DIR)
-        try:
-            crawler.run()
-        except FileNotFoundError:
-            return '졸업요건 원본 파일이 없습니다.'
-        new_df = _load_df()
-        if prev_df.empty and new_df.empty:
-            return '졸업요건 데이터를 찾지 못했습니다.'
-        if prev_df.equals(new_df):
-            return '새로운 졸업요건 변경 사항이 없습니다.'
-        diff_rows = len(new_df.drop_duplicates().merge(prev_df.drop_duplicates(), how='outer', indicator=True).query("_merge=='left_only'"))
-        if diff_rows:
-            return f'졸업요건 정보가 {diff_rows}건 업데이트되었습니다.'
-        return '새로운 졸업요건 변경 사항이 없습니다.'
+    year = _parse_year(question)
+    dept_q = _parse_dept(question)
+    if not dept_q:
+        return "어떤 학과의 졸업요건이 궁금한지 다시 입력해주세요."
 
-    dept = _parse_dept(question)
-    df = prev_df
+    target_year = year if year is not None else 2025
+    df = _load_year_df(target_year)
     if df.empty:
-        crawler = GraduationRequirementCrawler(OUT_DIR)
-        try:
-            crawler.run()
-        except FileNotFoundError:
-            return '졸업요건 원본 파일이 없습니다.'
-        df = _load_df()
-    if dept and not df.empty:
-        best_score = 0.0
-        best_row = None
-        for _, row in df.iterrows():
-            for cell in row.astype(str):
-                score = _similar(dept, str(cell))
-                if score > best_score:
-                    best_score = score
-                    best_row = row
-        if best_row is not None and best_score >= 0.5:
-            sample = ' '.join(str(c) for c in best_row.dropna().astype(str).tolist()[:3])
-            return f'{dept} 관련 졸업요건 정보: {sample} ...'
-    return '요청하신 졸업요건 정보를 찾지 못했습니다.'
+        return "졸업요건 데이터를 찾지 못했습니다."
+
+    best_dept = _find_best_dept(df, dept_q)
+    if best_dept is None:
+        return "과 이름을 다시 확인해주세요."
+
+    major_df = df[df["학과명"] == best_dept]
+    if major_df.empty:
+        return "요청하신 졸업요건 정보를 찾지 못했습니다."
+
+    table = (
+        major_df[
+            [
+                "구분",
+                "기초(필수)",
+                "균형(인문학)",
+                "균형(사회과학)",
+                "균형(자연과학)",
+                "균형(필수)",
+                "소양(선택)",
+                "소양(필수)",
+                "교양 소계",
+                "전공 기초",
+                "전공 핵심",
+                "전공 심화",
+                "전공 소계",
+                "일반 선택",
+                "졸업 학점(총계)",
+            ]
+        ]
+        .set_index("구분")
+        .to_string()
+    )
+
+    return f"{target_year}학년도 {best_dept} 졸업요건\n{table}"
