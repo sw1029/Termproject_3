@@ -2,6 +2,8 @@ from pathlib import Path
 import csv
 import json
 import re
+from difflib import SequenceMatcher
+
 from ..crawlers.notices import NoticeCrawler
 from ..retrieval.rag_pipeline import HybridRetriever
 
@@ -20,6 +22,11 @@ def _load_rows() -> list[dict]:
 def _parse_dept(q: str) -> str | None:
     m = re.search(r'([\w가-힣]+(?:학과|학부|대학원|대학))', q)
     return m.group(1) if m else None
+
+
+def _similar(a: str, b: str) -> float:
+    """Return a similarity ratio between two strings."""
+    return SequenceMatcher(None, a, b).ratio()
 
 
 def _has_update_request(q: str) -> bool:
@@ -53,7 +60,18 @@ def generate_answer(question: str) -> str:
     def _filter(records: list[dict]) -> list[dict]:
         if not dept:
             return records
-        return [r for r in records if dept in r.get('dept', '') or dept in r.get('college', '') or dept in r.get('title', '')]
+
+        scored: list[tuple[float, dict]] = []
+        for r in records:
+            candidates = [r.get('dept', ''), r.get('college', ''), r.get('title', '')]
+            score = max(_similar(dept, c) for c in candidates)
+            if score >= 0.5:
+                scored.append((score, r))
+
+        if not scored:
+            return []
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [r for _, r in scored]
 
     filtered = _filter(rows)
     if not filtered:
