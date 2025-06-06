@@ -37,14 +37,20 @@ def handle_user_message(data):
     user_msg = data.get('message', '')
     append_question(user_msg)
     try:
-        resp = requests.post(f"{API_URL}/answer", json={"question": user_msg}, timeout=10)
+        resp = requests.post(
+            f"{API_URL}/answer", json={"question": user_msg}, timeout=10
+        )
         if resp.ok:
-            bot_reply = resp.json().get('answer', '')
+            data = resp.json()
+            bot_reply = data.get("answer", "")
+            label = data.get("label")
         else:
-            bot_reply = 'Error'
+            bot_reply = "Error"
+            label = None
     except Exception:
-        bot_reply = 'Error'
-    emit('bot_message', {'message': bot_reply})
+        bot_reply = "Error"
+        label = None
+    emit("bot_message", {"message": bot_reply, "label": label})
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000)

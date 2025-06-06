@@ -41,6 +41,26 @@ body {
   align-self: flex-start;
 }
 
+.label-0 {
+  background: #ffe2e2;
+}
+
+.label-1 {
+  background: #e2e2ff;
+}
+
+.label-2 {
+  background: #e2ffe2;
+}
+
+.label-3 {
+  background: #fff5e2;
+}
+
+.label-4 {
+  background: #f5e2ff;
+}
+
 #chat-form {
   display: flex;
   padding: 1rem;
