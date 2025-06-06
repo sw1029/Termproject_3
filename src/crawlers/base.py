@@ -18,10 +18,17 @@ class BaseCrawler(ABC):
         """Parse raw data into structured records."""
 
     def save(self, items: Iterable[dict]) -> None:
-        path = self.out_dir / 'data.json'
+        """Save items to ``data.json`` with crawl timestamp."""
+        from datetime import datetime
         import json
+
+        path = self.out_dir / 'data.json'
+        payload = {
+            'crawled_at': datetime.now().strftime('%Y-%m-%d'),
+            'items': list(items),
+        }
         with open(path, 'w', encoding='utf-8') as f:
-            json.dump(list(items), f, ensure_ascii=False, indent=2)
+            json.dump(payload, f, ensure_ascii=False, indent=2)
 
     def run(self) -> None:
         raw = self.fetch()
