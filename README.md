@@ -189,12 +189,3 @@ Python 3.10.12 환경을 기준으로 동작합니다. `pyenv` 사용 시 아래
 pyenv install 3.10.12       # 최초 한 번만 실행
 pyenv local 3.10.12
 ```
-
-PyTorch 2.5.1(CUDA 12.1) 빌드는 다음과 같이 직접 휠 파일을 지정해 설치합니다. 이후 `bitsandbytes` 등 나머지 의존성을 설치합니다.
-
-```bash
-pip install https://download.pytorch.org/whl/cu121/torch-2.5.1%2Bcu121-cp310-cp310-linux_x86_64.whl
-pip install torchvision==0.18.1+cu121 -f https://download.pytorch.org/whl/cu121/torch_stable.html
-pip install bitsandbytes accelerate chardet charset-normalizer jupyter
-pip install -r requirements.txt
-```
