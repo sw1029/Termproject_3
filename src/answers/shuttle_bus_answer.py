@@ -42,7 +42,8 @@ def generate_answer(question: str) -> str:
     if _has_update_request(question):
         prev_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in items}
         crawler = ShuttleBusCrawler(OUT_DIR)
-        crawler.run()
+        if not crawler.run():
+            return "네트워크 오류로 셔틀버스 정보를 가져오지 못했습니다."
         new_items = _load_items(path)
         new_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in new_items}
         diff = [json.loads(s) for s in new_set - prev_set]
@@ -69,7 +70,8 @@ def generate_answer(question: str) -> str:
     filtered = _filter(items)
     if not filtered:
         crawler = ShuttleBusCrawler(OUT_DIR)
-        crawler.run()
+        if not crawler.run():
+            return "네트워크 오류로 셔틀버스 정보를 가져오지 못했습니다."
         items = _load_items(path)
         filtered = _filter(items)
     if filtered:

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Iterable
+import requests
 
 class BaseCrawler(ABC):
     """Abstract base class for all crawlers."""
@@ -30,7 +31,14 @@ class BaseCrawler(ABC):
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
 
-    def run(self) -> None:
-        raw = self.fetch()
+    def run(self) -> bool:
+        """Fetch, parse and save records.
+
+        Returns ``True`` when network calls succeed, ``False`` otherwise."""
+        try:
+            raw = self.fetch()
+        except requests.RequestException:
+            return False
         records = self.parse(raw)
         self.save(records)
+        return True
