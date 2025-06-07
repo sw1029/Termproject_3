@@ -59,7 +59,7 @@ Termproject_{3}/
 │   ├── chat_output.json         *# --- 챗봇 데모 세션 로그
 │   └── realtime_output.json     *# --- 실시간 API 인입/응답 기록
 │
-├── chatbot.sh                   *# --- 전체 파이프라인(크롤러→인덱스→API) 구동 스크립트
+├── chatbot.sh                   *# --- 전체 파이프라인(크롤러→인덱스→API→WebUI) 구동 스크립트
 ├── requirements.txt             *# --- Python 패키지 의존성 목록
 └── README.md                    *# --- (현재 문서)
 
@@ -159,7 +159,7 @@ Termproject_{3}/
 
 | 파일 | 설명 |
 |------|------|
-| `chatbot.sh` | ① **모든 크롤러 실행** → ② `build_index.py` 호출 → ③ FastAPI 실행 (uvicorn) |
+| `chatbot.sh` | ① **모든 크롤러 실행** → ② `build_index.py` 호출 → ③ FastAPI 실행 (uvicorn) → ④ Flask Web UI 실행 |
 | `offline_crawl.py` | 일정 범위를 크롤링하여 **오프라인 DB** 미리 구축 |
 | `requirements.txt` | Python 패키지 고정 버전 목록 (`fastapi`, `streamlit`, `qdrant-client` …) |
 | `README.md` | **프로젝트 개요 및 파일 설명(본 문서)** |
