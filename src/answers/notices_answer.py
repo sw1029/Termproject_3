@@ -46,7 +46,8 @@ def generate_answer(question: str) -> str:
     if _has_update_request(question):
         prev_set = {json.dumps(r, ensure_ascii=False, sort_keys=True) for r in rows}
         crawler = NoticeCrawler(OUT_DIR)
-        crawler.run()
+        if not crawler.run():
+            return "네트워크 오류로 공지사항을 가져오지 못했습니다."
         new_rows = _load_rows()
         new_set = {json.dumps(r, ensure_ascii=False, sort_keys=True) for r in new_rows}
         diff = [json.loads(s) for s in new_set - prev_set]
@@ -76,7 +77,8 @@ def generate_answer(question: str) -> str:
     filtered = _filter(rows)
     if not filtered:
         crawler = NoticeCrawler(OUT_DIR)
-        crawler.run()
+        if not crawler.run():
+            return "네트워크 오류로 공지사항을 가져오지 못했습니다."
         rows = _load_rows()
         filtered = _filter(rows)
 

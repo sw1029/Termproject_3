@@ -160,6 +160,7 @@ Termproject_{3}/
 | 파일 | 설명 |
 |------|------|
 | `chatbot.sh` | ① **모든 크롤러 실행** → ② `build_index.py` 호출 → ③ FastAPI 실행 (uvicorn) |
+| `offline_crawl.py` | 일정 범위를 크롤링하여 **오프라인 DB** 미리 구축 |
 | `requirements.txt` | Python 패키지 고정 버전 목록 (`fastapi`, `streamlit`, `qdrant-client` …) |
 | `README.md` | **프로젝트 개요 및 파일 설명(본 문서)** |
 
