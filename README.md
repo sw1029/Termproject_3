@@ -180,3 +180,13 @@ Streamlit(chatbot_ui.py) ───┘
 - `realtime_model.py` 는 REST API 층에서 `rag_pipeline`을 호출  
 - Flask web UI·CLI·테스트 모두 같은 REST 인터페이스를 소비  
 
+
+## 환경 설정
+
+Python 3.10.12 환경을 기준으로 동작합니다. GPU 사용을 위해 PyTorch 2.5.1의 CUDA 빌드를 설치하고 `bitsandbytes` 관련 패키지를 먼저 설치하세요.
+
+```bash
+pip install torch==2.5.1+cu121 torchvision==0.18.1+cu121 -f https://download.pytorch.org/whl/cu121/torch_stable.html
+pip install bitsandbytes accelerate chardet charset-normalizer jupyter
+pip install -r requirements.txt
+```
