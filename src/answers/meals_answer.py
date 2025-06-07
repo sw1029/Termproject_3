@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 from ..crawlers.meals import MealsCrawler
 from ..retrieval.rag_pipeline import HybridRetriever
+from . import ensure_offline_db
 
 
 def _is_weekend(date_str: str) -> bool:
@@ -65,6 +66,7 @@ def _search_fallback(question: str) -> str | None:
 
 
 def generate_answer(question: str) -> str:
+    ensure_offline_db()
     date = _parse_date(question)
     path = OUT_DIR / f'{date}.json'
     items = _load_items(path)

@@ -6,6 +6,7 @@ from difflib import SequenceMatcher
 
 from ..crawlers.notices import NoticeCrawler
 from ..retrieval.rag_pipeline import HybridRetriever
+from . import ensure_offline_db
 
 OUT_DIR = Path('data/raw/notices')
 
@@ -41,6 +42,7 @@ def _search_fallback(question: str) -> str | None:
 
 
 def generate_answer(question: str) -> str:
+    ensure_offline_db()
     rows = _load_rows()
 
     if _has_update_request(question):

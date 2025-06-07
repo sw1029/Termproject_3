@@ -2,6 +2,7 @@ from pathlib import Path
 import json
 from ..crawlers.shuttle_bus import ShuttleBusCrawler
 from ..retrieval.rag_pipeline import HybridRetriever
+from . import ensure_offline_db
 
 OUT_DIR = Path('data/raw/shuttle_bus')
 
@@ -36,6 +37,7 @@ def _search_fallback(question: str) -> str | None:
 
 
 def generate_answer(question: str) -> str:
+    ensure_offline_db()
     path = OUT_DIR / 'data.json'
     items = _load_items(path)
 
