@@ -18,13 +18,18 @@ uvicorn src.realtime_model:app --reload --port 8000 &
 SERVER_PID=$!
 sleep 3
 
+# Launch web UI in background
+python webui/app.py &
+WEBUI_PID=$!
+sleep 1
+
 # Generate evaluation outputs
 python -m src.evaluation.generate_outputs || true
 
-# Keep server running if script invoked normally
+# Keep servers running if script invoked normally
 if [[ "$EVAL_ONLY" == "1" ]]; then
-  kill $SERVER_PID
-  wait $SERVER_PID 2>/dev/null || true
+  kill $SERVER_PID $WEBUI_PID
+  wait $SERVER_PID $WEBUI_PID 2>/dev/null || true
 else
-  wait $SERVER_PID
+  wait $SERVER_PID $WEBUI_PID
 fi
