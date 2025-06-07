@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 from ..crawlers.academic_calendar import AcademicCalendarCrawler
 from ..retrieval.rag_pipeline import HybridRetriever
+from . import ensure_offline_db
 
 OUT_DIR = Path('data/raw/academic_calendar')
 
@@ -54,6 +55,7 @@ def _search_fallback(question: str) -> str | None:
 
 
 def generate_answer(question: str) -> str:
+    ensure_offline_db()
     year, month, day = _parse_year_month_day(question)
     year = year or datetime.now().year
     path = OUT_DIR / str(year) / 'data.json'
