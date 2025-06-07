@@ -4,7 +4,20 @@ import json
 import re
 from difflib import SequenceMatcher
 
-from ..crawlers.notices import NoticeCrawler
+from importlib import util
+import sys, types
+
+def _load_notice_crawler():
+    pkg = types.ModuleType('crawlers')
+    base_spec = util.spec_from_file_location('crawlers.base', 'src/crawlers/base.py')
+    base_mod = util.module_from_spec(base_spec)
+    base_spec.loader.exec_module(base_mod)
+    sys.modules.setdefault('crawlers', pkg)
+    sys.modules['crawlers.base'] = base_mod
+    spec = util.spec_from_file_location('crawlers.notices', 'src/crawlers/notices.py')
+    mod = util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.NoticeCrawler
 from ..retrieval.rag_pipeline import HybridRetriever
 from . import ensure_offline_db
 
@@ -47,6 +60,7 @@ def generate_answer(question: str) -> str:
 
     if _has_update_request(question):
         prev_set = {json.dumps(r, ensure_ascii=False, sort_keys=True) for r in rows}
+        NoticeCrawler = _load_notice_crawler()
         crawler = NoticeCrawler(OUT_DIR)
         if not crawler.run():
             return "네트워크 오류로 공지사항을 가져오지 못했습니다."
@@ -78,6 +92,7 @@ def generate_answer(question: str) -> str:
 
     filtered = _filter(rows)
     if not filtered:
+        NoticeCrawler = _load_notice_crawler()
         crawler = NoticeCrawler(OUT_DIR)
         if not crawler.run():
             return "네트워크 오류로 공지사항을 가져오지 못했습니다."
