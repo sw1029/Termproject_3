@@ -2,7 +2,21 @@ from pathlib import Path
 import json
 import re
 from datetime import datetime
-from ..crawlers.meals import MealsCrawler
+from importlib import util
+import sys, types
+
+def _load_meals_crawler():
+    """Dynamically load ``MealsCrawler`` without importing other crawlers."""
+    pkg = types.ModuleType('crawlers')
+    base_spec = util.spec_from_file_location('crawlers.base', 'src/crawlers/base.py')
+    base_mod = util.module_from_spec(base_spec)
+    base_spec.loader.exec_module(base_mod)
+    sys.modules.setdefault('crawlers', pkg)
+    sys.modules['crawlers.base'] = base_mod
+    spec = util.spec_from_file_location('crawlers.meals', 'src/crawlers/meals.py')
+    mod = util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.MealsCrawler
 from ..retrieval.rag_pipeline import HybridRetriever
 from . import ensure_offline_db
 
@@ -30,9 +44,9 @@ def _parse_date(question: str) -> str:
         m = re.search(r"(\d{1,2})월(\d{1,2})일", question)
     if m:
         now = datetime.now()
-        y = now.year
+        year = now.year
         month, day = int(m.group(1)), int(m.group(2))
-        return f"{y}{month:02d}{day:02d}"
+        return f"{year}{month:02d}{day:02d}"
     return datetime.now().strftime('%Y%m%d')
 
 
@@ -76,6 +90,7 @@ def generate_answer(question: str) -> str:
 
     if _has_update_request(question):
         prev_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in items}
+        MealsCrawler = _load_meals_crawler()
         crawler = MealsCrawler(OUT_DIR, date)
         if not crawler.run():
             return "네트워크 오류로 식단 정보를 가져오지 못했습니다."
@@ -99,12 +114,22 @@ def generate_answer(question: str) -> str:
         return filtered
 
     filtered = _filter(items)
-    if not filtered:
+    if not filtered or all(it.get('menu') == '운영안함' for it in filtered):
+        MealsCrawler = _load_meals_crawler()
         crawler = MealsCrawler(OUT_DIR, date)
         if not crawler.run():
             return "네트워크 오류로 식단 정보를 가져오지 못했습니다."
         items = _load_items(path)
         filtered = _filter(items)
+        if not filtered or all(it.get('menu') == '운영안함' for it in filtered):
+            # fallback to previous year if future menu is unavailable
+            prev_year = str(int(date[:4]) - 1) + date[4:]
+            path_prev = OUT_DIR / f'{prev_year}.json'
+            MealsCrawler = _load_meals_crawler()
+            crawler = MealsCrawler(OUT_DIR, prev_year)
+            if crawler.run():
+                items = _load_items(path_prev)
+                filtered = _filter(items)
 
     if filtered:
         menus = ', '.join(it.get('menu', '') for it in filtered[:3])
