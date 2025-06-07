@@ -4,6 +4,7 @@ import pandas as pd
 import re
 
 from ..crawlers.graduation_req import GraduationRequirementCrawler
+from . import ensure_offline_db
 
 OUT_DIR = Path("data/raw/graduation_req")
 
@@ -96,6 +97,7 @@ def _has_update_request(q: str) -> bool:
 
 
 def generate_answer(question: str) -> str:
+    ensure_offline_db()
     year = _parse_year(question)
     dept_q = _parse_dept(question)
     if not dept_q:
