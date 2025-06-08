@@ -83,19 +83,18 @@ def generate_answer(question: str) -> str:
     ensure_offline_db()
     date = _parse_date(question)
     path = OUT_DIR / f'{date}.json'
+    prev_items = _load_items(path)
+    MealsCrawler = _load_meals_crawler()
+    crawler = MealsCrawler(OUT_DIR, date)
+    crawler.run()
     items = _load_items(path)
 
     if _is_weekend(date):
         return "주말에는 운영하지 않습니다."
 
     if _has_update_request(question):
-        prev_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in items}
-        MealsCrawler = _load_meals_crawler()
-        crawler = MealsCrawler(OUT_DIR, date)
-        if not crawler.run():
-            return "네트워크 오류로 식단 정보를 가져오지 못했습니다."
-        new_items = _load_items(path)
-        new_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in new_items}
+        prev_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in prev_items}
+        new_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in items}
         diff = [json.loads(s) for s in new_set - prev_set]
         if diff:
             sample = ', '.join(d.get('menu', '') for d in diff[:3])
@@ -115,21 +114,14 @@ def generate_answer(question: str) -> str:
 
     filtered = _filter(items)
     if not filtered or all(it.get('menu') == '운영안함' for it in filtered):
+        # fallback to previous year if future menu is unavailable
+        prev_year = str(int(date[:4]) - 1) + date[4:]
+        path_prev = OUT_DIR / f'{prev_year}.json'
         MealsCrawler = _load_meals_crawler()
-        crawler = MealsCrawler(OUT_DIR, date)
-        if not crawler.run():
-            return "네트워크 오류로 식단 정보를 가져오지 못했습니다."
-        items = _load_items(path)
-        filtered = _filter(items)
-        if not filtered or all(it.get('menu') == '운영안함' for it in filtered):
-            # fallback to previous year if future menu is unavailable
-            prev_year = str(int(date[:4]) - 1) + date[4:]
-            path_prev = OUT_DIR / f'{prev_year}.json'
-            MealsCrawler = _load_meals_crawler()
-            crawler = MealsCrawler(OUT_DIR, prev_year)
-            if crawler.run():
-                items = _load_items(path_prev)
-                filtered = _filter(items)
+        crawler = MealsCrawler(OUT_DIR, prev_year)
+        if crawler.run():
+            items = _load_items(path_prev)
+            filtered = _filter(items)
 
     if filtered:
         menus = ', '.join(it.get('menu', '') for it in filtered[:3])
