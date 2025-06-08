@@ -56,16 +56,15 @@ def _search_fallback(question: str) -> str | None:
 
 def generate_answer(question: str) -> str:
     ensure_offline_db()
+    prev_rows = _load_rows()
+    NoticeCrawler = _load_notice_crawler()
+    crawler = NoticeCrawler(OUT_DIR)
+    crawler.run()
     rows = _load_rows()
 
     if _has_update_request(question):
-        prev_set = {json.dumps(r, ensure_ascii=False, sort_keys=True) for r in rows}
-        NoticeCrawler = _load_notice_crawler()
-        crawler = NoticeCrawler(OUT_DIR)
-        if not crawler.run():
-            return "네트워크 오류로 공지사항을 가져오지 못했습니다."
-        new_rows = _load_rows()
-        new_set = {json.dumps(r, ensure_ascii=False, sort_keys=True) for r in new_rows}
+        prev_set = {json.dumps(r, ensure_ascii=False, sort_keys=True) for r in prev_rows}
+        new_set = {json.dumps(r, ensure_ascii=False, sort_keys=True) for r in rows}
         diff = [json.loads(s) for s in new_set - prev_set]
         if diff:
             sample = ', '.join(d['title'] for d in diff[:3])
@@ -91,13 +90,6 @@ def generate_answer(question: str) -> str:
         return [r for _, r in scored]
 
     filtered = _filter(rows)
-    if not filtered:
-        NoticeCrawler = _load_notice_crawler()
-        crawler = NoticeCrawler(OUT_DIR)
-        if not crawler.run():
-            return "네트워크 오류로 공지사항을 가져오지 못했습니다."
-        rows = _load_rows()
-        filtered = _filter(rows)
 
     if filtered:
         sample = ', '.join(r['title'] for r in filtered[:3])
