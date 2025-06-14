@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from pathlib import Path
 import json
@@ -117,7 +117,30 @@ def _route_answer(label: int, question: str) -> str:
 
 @app.post('/answer')
 async def answer(query: Query):
-    label = classifier.predict(query.question)
-    text = _route_answer(label, query.question)
-    append_log({"user": query.question, "model": text, "label": label})
-    return {'answer': text, 'label': label}
+    """Return an answer for ``query`` with detailed error handling."""
+    label = -1
+    try:
+        # Step 1: classify the question
+        label = classifier.predict(query.question)
+
+        # Step 2: generate answer based on the label
+        text = _route_answer(label, query.question)
+
+        # Log success
+        append_log({"user": query.question, "model": text, "label": label, "status": "SUCCESS"})
+        return {'answer': text, 'label': label}
+
+    except Exception as e:
+        error_code = "ERR_UNKNOWN"
+        error_message = f"알 수 없는 오류가 발생했습니다: {e}"
+        if label == -1:
+            error_code = "ERR_CLASSIFY"
+            error_message = f"질문 분류 중 오류가 발생했습니다: {e}"
+        else:
+            error_code = f"ERR_ANSWER_{label}"
+            error_message = f"답변 생성 중 오류가 발생했습니다 (Label: {label}): {e}"
+
+        # Log failure
+        append_log({"user": query.question, "model": error_message, "label": label, "status": "FAIL"})
+
+        raise HTTPException(status_code=500, detail={"code": error_code, "message": error_message})
