@@ -11,6 +11,6 @@ class Settings(BaseSettings):
 
     # generator model configuration
     generator_model_type: Literal['local', 'openai'] = 'local'
-    generator_model_name_or_path: str = "davidkim205/komodo-2.8b-v2-instruct"
+    generator_model_name_or_path: str = "google/gemma-2b-it"
 
 settings = Settings()
