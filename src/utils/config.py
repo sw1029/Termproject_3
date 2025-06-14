@@ -11,6 +11,6 @@ class Settings(BaseSettings):
 
     # generator model configuration
     generator_model_type: Literal['local', 'openai'] = 'local'
-    generator_model_name_or_path: str = "beomi/Llama-3-Open-Ko-8B-Instruct-preview"
+    generator_model_name_or_path: str = "davidkim205/komodo-2.8b-v2-instruct"
 
 settings = Settings()
