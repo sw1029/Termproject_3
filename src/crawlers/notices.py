@@ -137,7 +137,7 @@ def scrape_generic(college: str, dept: str, url: str) -> List[dict]:
 class NoticeCrawler(BaseCrawler):
     """Crawl department notice boards listed in links.txt."""
 
-    LINKS_FILE = Path("TODO_dir/cnu_crawler/data/links.txt")
+    LINKS_FILE = Path("data/links.txt")
 
     def fetch(self) -> List[Tuple[str, str, str]]:
         """Load department link list.
