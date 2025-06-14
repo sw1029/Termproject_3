@@ -1,10 +1,18 @@
 from pydantic import BaseSettings
 from pathlib import Path
+from typing import Literal
 
 class Settings(BaseSettings):
     data_dir: Path = Path('data')
     model_dir: Path = Path('model')
-    model_name: str = "dnotitia/Llama-DNA-1.0-8B-Instruct"
+
+    # classifier model used for intent detection
+    classifier_model_name: str = "dnotitia/Llama-DNA-1.0-8B-Instruct"
+
+    # generator model configuration
+    generator_model_type: Literal['local', 'openai'] = 'local'
+    generator_model_name_or_path: str = "google/gemma-2-9b-it"
     openai_api_key: str = 'YOUR_API_KEY'
+    openai_model_name: str = "gpt-4o-mini"
 
 settings = Settings()

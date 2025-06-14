@@ -5,6 +5,7 @@ import json
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 import torch
 from .retrieval.rag_pipeline import HybridRetriever, AnswerGenerator
+from .utils.config import settings
 from .answers import (
     academic_calendar_answer,
     shuttle_bus_answer,
@@ -55,6 +56,8 @@ class LLMClassifier:
         return int(best["label"].split("_")[-1])
 
 app = FastAPI()
+
+# Initialize core pipeline components once at startup
 retriever = HybridRetriever()
 generator = AnswerGenerator()
 classifier = LLMClassifier()
@@ -86,6 +89,8 @@ async def predict(query: Query):
     return {'label': label}
 
 def _route_answer(label: int, question: str) -> str:
+    """Route question to the appropriate answer module or fall back to RAG."""
+
     context = []
     if label == 0:
         df = graduation_req_answer.get_context(question)
@@ -104,6 +109,7 @@ def _route_answer(label: int, question: str) -> str:
 
     if not context:
         docs = retriever.retrieve(question)
+        # ``HybridRetriever`` is expected to return a list of texts
         context = [{"text": d} for d in docs]
 
     return generator.generate(question, context)
