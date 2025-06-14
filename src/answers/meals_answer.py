@@ -1,7 +1,7 @@
 from pathlib import Path
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from importlib import util
 import sys, types
 
@@ -39,15 +39,25 @@ def _load_items(path: Path):
 
 
 def _parse_date(question: str) -> str:
+    question = question.strip()
+    now = datetime.now()
+
+    if "오늘" in question:
+        return now.strftime("%Y%m%d")
+    if "내일" in question:
+        return (now + timedelta(days=1)).strftime("%Y%m%d")
+    if "어제" in question:
+        return (now - timedelta(days=1)).strftime("%Y%m%d")
+
     m = re.search(r"(\d{1,2})\s*월\s*(\d{1,2})\s*일", question)
     if not m:
         m = re.search(r"(\d{1,2})월(\d{1,2})일", question)
     if m:
-        now = datetime.now()
         year = now.year
         month, day = int(m.group(1)), int(m.group(2))
         return f"{year}{month:02d}{day:02d}"
-    return datetime.now().strftime('%Y%m%d')
+
+    return now.strftime("%Y%m%d")
 
 
 def _parse_meal(question: str):
