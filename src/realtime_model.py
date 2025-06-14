@@ -62,6 +62,7 @@ app = FastAPI()
 retriever = HybridRetriever()
 generator = AnswerGenerator()
 classifier = LLMClassifier()
+#classifier = SimpleClassifier()
 
 LOG_PATH = Path("outputs/realtime_output.json")
 

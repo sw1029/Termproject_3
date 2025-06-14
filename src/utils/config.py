@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     model_dir: Path = Path('model')
 
     # classifier model used for intent detection
-    classifier_model_name: str = "dnotitia/Llama-DNA-1.0-8B-Instruct"
+    classifier_model_name: str = "Qwen/Qwen3-14B"
 
     # generator model configuration
     generator_model_type: Literal['local', 'openai'] = 'local'
