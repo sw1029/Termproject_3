@@ -96,48 +96,32 @@ def _has_update_request(q: str) -> bool:
     return any(k in q for k in keywords)
 
 
-def generate_answer(question: str) -> str:
+def get_context(question: str):
+    """Return graduation requirement table rows matching the question."""
     ensure_offline_db()
     year = _parse_year(question)
     dept_q = _parse_dept(question)
     if not dept_q:
-        return "어떤 학과의 졸업요건이 궁금한지 다시 입력해주세요."
+        return []
 
     target_year = year if year is not None else 2025
     df = _load_year_df(target_year)
     if df.empty:
-        return "졸업요건 데이터를 찾지 못했습니다."
+        return []
 
     best_dept = _find_best_dept(df, dept_q)
     if best_dept is None:
-        return "과 이름을 다시 확인해주세요."
+        return []
 
     major_df = df[df["학과명"] == best_dept]
-    if major_df.empty:
-        return "요청하신 졸업요건 정보를 찾지 못했습니다."
+    return major_df.to_dict("records")
 
-    table = (
-        major_df[
-            [
-                "구분",
-                "기초(필수)",
-                "균형(인문학)",
-                "균형(사회과학)",
-                "균형(자연과학)",
-                "균형(필수)",
-                "소양(선택)",
-                "소양(필수)",
-                "교양 소계",
-                "전공 기초",
-                "전공 핵심",
-                "전공 심화",
-                "전공 소계",
-                "일반 선택",
-                "졸업 학점(총계)",
-            ]
-        ]
-        .set_index("구분")
-        .to_string()
-    )
 
-    return f"{target_year}학년도 {best_dept} 졸업요건\n{table}"
+def generate_answer(question: str) -> str:
+    context = get_context(question)
+    if not context:
+        return "졸업요건 정보를 찾지 못했습니다."
+    sample = context[0]
+    dept = sample.get("학과명", "")
+    year = sample.get("year", "")
+    return f"{year}학년도 {dept} 졸업요건 예시"

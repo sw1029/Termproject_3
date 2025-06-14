@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from pathlib import Path
 import json
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+import torch
 from .retrieval.rag_pipeline import HybridRetriever, AnswerGenerator
 from .answers import (
     academic_calendar_answer,
@@ -31,10 +33,31 @@ class SimpleClassifier:
                     return label
         return 1
 
+
+class LLMClassifier:
+    """Load fine-tuned sequence classification model to predict labels."""
+
+    def __init__(self, model_path: str = "./models/classifier"):
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        device = 0 if torch.cuda.is_available() else -1
+        self.pipe = pipeline(
+            "text-classification",
+            model=self.model,
+            tokenizer=self.tokenizer,
+            device=device,
+            return_all_scores=True,
+        )
+
+    def predict(self, text: str) -> int:
+        result = self.pipe(text)[0]
+        best = max(result, key=lambda x: x["score"])
+        return int(best["label"].split("_")[-1])
+
 app = FastAPI()
 retriever = HybridRetriever()
 generator = AnswerGenerator()
-classifier = SimpleClassifier()
+classifier = LLMClassifier()
 
 LOG_PATH = Path("outputs/realtime_output.json")
 
@@ -63,18 +86,27 @@ async def predict(query: Query):
     return {'label': label}
 
 def _route_answer(label: int, question: str) -> str:
+    context = []
     if label == 0:
-        return graduation_req_answer.generate_answer(question)
-    if label == 1:
-        return notices_answer.generate_answer(question)
-    if label == 2:
-        return academic_calendar_answer.generate_answer(question)
-    if label == 3:
-        return meals_answer.generate_answer(question)
-    if label == 4:
-        return shuttle_bus_answer.generate_answer(question)
-    docs = retriever.retrieve(question)
-    return generator.generate(question, docs)
+        df = graduation_req_answer.get_context(question)
+        if hasattr(df, 'to_dict'):
+            context = df.to_dict('records')
+        else:
+            context = df
+    elif label == 1:
+        context = notices_answer.get_context(question)
+    elif label == 2:
+        context = academic_calendar_answer.get_context(question)
+    elif label == 3:
+        context = meals_answer.get_context(question)
+    elif label == 4:
+        context = shuttle_bus_answer.get_context(question)
+
+    if not context:
+        docs = retriever.retrieve(question)
+        context = [{"text": d} for d in docs]
+
+    return generator.generate(question, context)
 
 
 @app.post('/answer')

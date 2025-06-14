@@ -54,7 +54,8 @@ def _search_fallback(question: str) -> str | None:
     return docs[0] if docs else None
 
 
-def generate_answer(question: str) -> str:
+def get_context(question: str) -> list[dict]:
+    """Return notice rows related to the question."""
     ensure_offline_db()
     prev_rows = _load_rows()
     NoticeCrawler = _load_notice_crawler()
@@ -66,36 +67,32 @@ def generate_answer(question: str) -> str:
         prev_set = {json.dumps(r, ensure_ascii=False, sort_keys=True) for r in prev_rows}
         new_set = {json.dumps(r, ensure_ascii=False, sort_keys=True) for r in rows}
         diff = [json.loads(s) for s in new_set - prev_set]
-        if diff:
-            sample = ', '.join(d['title'] for d in diff[:3])
-            return f"새로운 공지가 업데이트되었습니다: {sample} 등"
-        return "최근 공지사항 업데이트가 없습니다."
+        return diff
 
     dept = _parse_dept(question)
 
     def _filter(records: list[dict]) -> list[dict]:
         if not dept:
             return records
-
         scored: list[tuple[float, dict]] = []
         for r in records:
             candidates = [r.get('dept', ''), r.get('college', ''), r.get('title', '')]
             score = max(_similar(dept, c) for c in candidates)
             if score >= 0.5:
                 scored.append((score, r))
-
         if not scored:
             return []
         scored.sort(key=lambda x: x[0], reverse=True)
         return [r for _, r in scored]
 
-    filtered = _filter(rows)
+    return _filter(rows)
 
-    if filtered:
-        sample = ', '.join(r['title'] for r in filtered[:3])
-        prefix = dept if dept else '최근 공지'
-        return f"{prefix} 목록: {sample} 등"
 
+def generate_answer(question: str) -> str:
+    context = get_context(question)
+    if context:
+        sample = ', '.join(r['title'] for r in context[:3])
+        return f"공지 예시: {sample} 등"
     fb = _search_fallback(question)
     if fb:
         return fb

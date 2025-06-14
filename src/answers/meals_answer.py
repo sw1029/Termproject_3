@@ -79,10 +79,11 @@ def _search_fallback(question: str) -> str | None:
     return docs[0] if docs else None
 
 
-def generate_answer(question: str) -> str:
+def get_context(question: str) -> list[dict]:
+    """Return filtered meal records as context for RAG."""
     ensure_offline_db()
     date = _parse_date(question)
-    path = OUT_DIR / f'{date}.json'
+    path = OUT_DIR / f"{date}.json"
     prev_items = _load_items(path)
     MealsCrawler = _load_meals_crawler()
     crawler = MealsCrawler(OUT_DIR, date)
@@ -90,16 +91,13 @@ def generate_answer(question: str) -> str:
     items = _load_items(path)
 
     if _is_weekend(date):
-        return "주말에는 운영하지 않습니다."
+        return [{"message": "주말에는 운영하지 않습니다."}]
 
     if _has_update_request(question):
         prev_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in prev_items}
         new_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in items}
         diff = [json.loads(s) for s in new_set - prev_set]
-        if diff:
-            sample = ', '.join(d.get('menu', '') for d in diff[:3])
-            return f"식단이 업데이트되었습니다: {sample} 등"
-        return "최근 식단 변동 사항이 없습니다."
+        return diff
 
     cafeteria = _parse_cafeteria(question)
     meal_type = _parse_meal(question)
@@ -107,38 +105,29 @@ def generate_answer(question: str) -> str:
     def _filter(records: list[dict]) -> list[dict]:
         filtered = records
         if cafeteria is not None:
-            filtered = [it for it in filtered if it.get('cafeteria') == cafeteria]
+            filtered = [it for it in filtered if it.get("cafeteria") == cafeteria]
         if meal_type is not None:
-            filtered = [it for it in filtered if it.get('meal') == meal_type]
+            filtered = [it for it in filtered if it.get("meal") == meal_type]
         return filtered
 
     filtered = _filter(items)
-    if not filtered or all(it.get('menu') == '운영안함' for it in filtered):
-        # fallback to previous year if future menu is unavailable
+    if not filtered or all(it.get("menu") == "운영안함" for it in filtered):
         prev_year = str(int(date[:4]) - 1) + date[4:]
-        path_prev = OUT_DIR / f'{prev_year}.json'
+        path_prev = OUT_DIR / f"{prev_year}.json"
         MealsCrawler = _load_meals_crawler()
         crawler = MealsCrawler(OUT_DIR, prev_year)
         if crawler.run():
             items = _load_items(path_prev)
             filtered = _filter(items)
+    return filtered
 
-    if filtered:
-        menus = ', '.join(it.get('menu', '') for it in filtered[:3])
-        date_txt = datetime.strptime(date, '%Y%m%d').strftime('%m월 %d일')
-        prefix = f"{date_txt}"
-        if cafeteria is not None:
-            prefix += f" {cafeteria}학생회관"
-        if meal_type:
-            prefix += f" {meal_type}"
-        return f"{prefix} 식단은 {menus} 등입니다."
 
-    if items:
-        if all(it.get('menu') == '주말' for it in items):
-            return "주말에는 운영하지 않습니다."
-        sample = ', '.join(it.get('menu', '') for it in items[:3])
-        return f"식단은 {sample} 등입니다."
-    fb = _search_fallback(question)
-    if fb:
-        return fb
-    return "식단 정보가 없습니다."
+def generate_answer(question: str) -> str:
+    context = get_context(question)
+    if not context:
+        fb = _search_fallback(question)
+        if fb:
+            return fb
+        return "식단 정보가 없습니다."
+    menus = ', '.join(it.get('menu', '') for it in context[:3])
+    return f"찾은 식단 정보: {menus} 등"

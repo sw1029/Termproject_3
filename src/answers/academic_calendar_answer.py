@@ -54,7 +54,8 @@ def _search_fallback(question: str) -> str | None:
     return docs[0] if docs else None
 
 
-def generate_answer(question: str) -> str:
+def get_context(question: str) -> list[dict]:
+    """Return matching academic calendar events as context."""
     ensure_offline_db()
     year, month, day = _parse_year_month_day(question)
     year = year or datetime.now().year
@@ -64,42 +65,38 @@ def generate_answer(question: str) -> str:
     if _has_update_request(question):
         prev_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in items}
         crawler = AcademicCalendarCrawler(OUT_DIR, year)
-        if not crawler.run():
-            return "네트워크 오류로 학사일정을 가져오지 못했습니다."
-        new_items = _load_items(path)
-        new_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in new_items}
-        diff = [json.loads(s) for s in new_set - prev_set]
-        if diff:
-            events = ', '.join(f"{d['month']} {d['date']} {d['event']}" for d in diff[:3])
-            return f"새로운 학사일정이 업데이트되었습니다: {events} 등"
-        return "최근 학사일정 변동 사항이 없습니다."
+        if crawler.run():
+            new_items = _load_items(path)
+            new_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in new_items}
+            diff = [json.loads(s) for s in new_set - prev_set]
+            return diff
+        return []
 
-    def _filter(records: list[dict]) -> list[str]:
+    def _filter(records: list[dict]) -> list[dict]:
         if month is None:
             return []
         matched = []
         for it in records:
             if str(month) in str(it.get('month', '')):
                 if day is None or str(day) in str(it.get('date', '')):
-                    matched.append(f"{it['date']} {it['event']}")
+                    matched.append(it)
         return matched
 
     matches = _filter(items)
     if not matches:
         crawler = AcademicCalendarCrawler(OUT_DIR, year)
-        if not crawler.run():
-            return "네트워크 오류로 학사일정을 가져오지 못했습니다."
-        items = _load_items(path)
-        matches = _filter(items)
+        if crawler.run():
+            items = _load_items(path)
+            matches = _filter(items)
+    return matches
 
-    if matches:
-        pre = f"{year}년 {month}월"
-        if day is not None:
-            pre += f" {day}일"
-        sample = ', '.join(matches[:3])
-        return f"{pre} 학사일정은 {sample} 등입니다."
 
-    fb = _search_fallback(question)
-    if fb:
-        return fb
-    return f"{year}년 {month or ''}월 {day or ''} 학사일정 정보가 없습니다.".strip()
+def generate_answer(question: str) -> str:
+    context = get_context(question)
+    if not context:
+        fb = _search_fallback(question)
+        if fb:
+            return fb
+        return "학사일정 정보를 찾지 못했습니다."
+    sample = ', '.join(f"{c.get('date')} {c.get('event')}" for c in context[:3])
+    return f"학사일정 예시: {sample} 등"

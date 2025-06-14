@@ -1,35 +1,17 @@
 #!/bin/bash
 set -e
 
-# Run crawlers (placeholders)
-if [[ "$EVAL_ONLY" != "1" ]]; then
-  python -m src.crawlers.academic_calendar || true
-  python -m src.crawlers.notices || true
-  python -m src.crawlers.shuttle_bus || true
-  python -m src.crawlers.graduation_req || true
-  python -m src.crawlers.meals || true
-fi
+echo "===== 1. 데이터베이스 초기화 및 오프라인 크롤링 시작 ====="
+python -m src.offline_crawl
 
-# Build search indexes
+echo "===== 2. 벡터 인덱스(Vector Store) 생성 시작 ====="
 python -m src.retrieval.build_index
 
-# Launch API server in background
-uvicorn src.realtime_model:app --reload --port 8000 &
-SERVER_PID=$!
+echo "===== 3. 백엔드(FastAPI) 및 프론트엔드(Flask) 서버 실행 ====="
+uvicorn src.realtime_model:app --host 0.0.0.0 --port 8000 &
+BACKEND_PID=$!
 sleep 3
-
-# Launch web UI in background
 python webui/app.py &
-WEBUI_PID=$!
-sleep 1
-
-# Generate evaluation outputs
-python -m src.evaluation.generate_outputs || true
-
-# Keep servers running if script invoked normally
-if [[ "$EVAL_ONLY" == "1" ]]; then
-  kill $SERVER_PID $WEBUI_PID
-  wait $SERVER_PID $WEBUI_PID 2>/dev/null || true
-else
-  wait $SERVER_PID $WEBUI_PID
-fi
+FRONTEND_PID=$!
+echo "UI 접속: http://localhost:5000"
+wait $FRONTEND_PID
