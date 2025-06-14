@@ -11,6 +11,6 @@ class Settings(BaseSettings):
 
     # generator model configuration
     generator_model_type: Literal['local', 'openai'] = 'local'
-    generator_model_name_or_path: str = "google/gemma-2b-it"
+    generator_model_name_or_path: str = "skt/ko-gpt-trinity-1.2B-v0.5"
 
 settings = Settings()
