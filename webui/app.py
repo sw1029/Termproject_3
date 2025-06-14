@@ -42,7 +42,7 @@ def handle_user_message(data):
 
     try:
         resp = requests.post(
-            f"{API_URL}/answer", json={"question": user_msg}, timeout=15
+            f"{API_URL}/answer", json={"question": user_msg}, timeout=120
         )
 
         if resp.ok:
@@ -60,7 +60,7 @@ def handle_user_message(data):
                 bot_reply = f"API 오류 (HTTP {status_code}): 서버로부터 유효하지 않은 응답을 받았습니다."
 
     except requests.exceptions.Timeout:
-        bot_reply = "오류: 서버 응답 시간이 초과되었습니다 (15초). 백엔드 서버를 확인해주세요."
+        bot_reply = "오류: 서버 응답 시간이 초과되었습니다 (120초). 백엔드 서버를 확인해주세요."
     except requests.exceptions.ConnectionError:
         bot_reply = "오류: 백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요."
     except Exception as e:

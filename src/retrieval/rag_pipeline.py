@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
-from openai import OpenAI
+
 
 from ..utils.config import settings
 
@@ -53,11 +53,7 @@ class AnswerGenerator:
                 torch_dtype=torch.bfloat16,
             )
             print(f"\u2705 Local Generator Model Loaded: {model_name}")
-        elif self.model_type == "openai":
-            if not settings.openai_api_key or settings.openai_api_key == "YOUR_API_KEY":
-                raise ValueError("OpenAI API 키가 설정되지 않았습니다.")
-            self.client = OpenAI(api_key=settings.openai_api_key)
-            print(f"\u2705 OpenAI Client Initialized for model: {settings.openai_model_name}")
+
 
     def generate(self, question: str, docs: List[Dict[str, Any]]) -> str:
         doc_texts = [json.dumps(d, ensure_ascii=False) for d in docs]

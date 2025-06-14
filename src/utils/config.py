@@ -1,4 +1,4 @@
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 from pathlib import Path
 from typing import Literal
 
@@ -11,8 +11,6 @@ class Settings(BaseSettings):
 
     # generator model configuration
     generator_model_type: Literal['local', 'openai'] = 'local'
-    generator_model_name_or_path: str = "google/gemma-2-9b-it"
-    openai_api_key: str = 'YOUR_API_KEY'
-    openai_model_name: str = "gpt-4o-mini"
+    generator_model_name_or_path: str = "EleutherAI/polyglot-ko-1.3b"
 
 settings = Settings()
