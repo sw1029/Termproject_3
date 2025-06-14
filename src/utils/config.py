@@ -11,6 +11,6 @@ class Settings(BaseSettings):
 
     # generator model configuration
     generator_model_type: Literal['local', 'openai'] = 'local'
-    generator_model_name_or_path: str = "EleutherAI/polyglot-ko-1.3b"
+    generator_model_name_or_path: str = "beomi/Llama-3-Open-Ko-8B-Instruct-preview"
 
 settings = Settings()
