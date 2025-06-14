@@ -82,3 +82,18 @@ body {
   border-radius: 4px;
   cursor: pointer;
 }
+
+.typing-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: #999;
+  animation: blink 1s infinite ease-in-out;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}

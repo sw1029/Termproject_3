@@ -4,7 +4,7 @@ import requests
 import json
 from pathlib import Path
 
-API_URL = "http://localhost:8000"
+FASTAPI_URL = "http://127.0.0.1:8000/answer"
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -32,41 +32,30 @@ def append_question(question: str):
 def index():
     return render_template('index.html')
 
-@socketio.on('user_message')
-def handle_user_message(data):
-    user_msg = data.get('message', '')
-    append_question(user_msg)
+@socketio.on('send_message')
+def handle_send_message(data):
+    message = data['message']
+    append_question(message)
+    print(f'Received message: {message}')
+    emit('receive_message', {'sender': 'user', 'message': message})
 
-    bot_reply = "알 수 없는 오류가 발생했습니다."
-    label = None
+    emit('receive_message', {'sender': 'bot', 'message': ''}, broadcast=True)
 
     try:
-        resp = requests.post(
-            f"{API_URL}/answer", json={"question": user_msg}, timeout=120
-        )
+        response = requests.post(FASTAPI_URL, json={'question': message}, stream=True)
+        response.raise_for_status()
 
-        if resp.ok:
-            data = resp.json()
-            bot_reply = data.get("answer", "답변을 찾지 못했습니다.")
-            label = data.get("label")
-        else:
-            status_code = resp.status_code
-            try:
-                error_data = resp.json().get("detail", {})
-                code = error_data.get("code", "UNKNOWN_API_ERROR")
-                message = error_data.get("message", resp.text)
-                bot_reply = f"API 오류 (HTTP {status_code}, 코드: {code}): {message}"
-            except json.JSONDecodeError:
-                bot_reply = f"API 오류 (HTTP {status_code}): 서버로부터 유효하지 않은 응답을 받았습니다."
+        for chunk in response.iter_content(chunk_size=None, decode_unicode=True):
+            if chunk:
+                socketio.emit('stream_token', {'token': chunk})
 
-    except requests.exceptions.Timeout:
-        bot_reply = "오류: 서버 응답 시간이 초과되었습니다 (120초). 백엔드 서버를 확인해주세요."
-    except requests.exceptions.ConnectionError:
-        bot_reply = "오류: 백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요."
-    except Exception as e:
-        bot_reply = f"웹 UI에서 예상치 못한 오류가 발생했습니다: {e}"
+        socketio.emit('stream_end', {})
 
-    emit("bot_message", {"message": bot_reply, "label": label})
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling FastAPI: {e}")
+        error_message = "죄송합니다, 답변을 생성하는 데 문제가 발생했습니다."
+        socketio.emit('stream_token', {'token': error_message})
+        socketio.emit('stream_end', {})
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)

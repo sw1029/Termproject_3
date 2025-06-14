@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from pathlib import Path
 import json
@@ -88,8 +89,8 @@ async def predict(query: Query):
     label = classifier.predict(query.question)
     return {'label': label}
 
-def _route_answer(label: int, question: str) -> str:
-    """Route question to the appropriate answer module or fall back to RAG."""
+def _route_answer(label: int, question: str) -> StreamingResponse:
+    """Route question to the appropriate answer module and stream the answer."""
 
     context = []
     if label == 0:
@@ -112,7 +113,9 @@ def _route_answer(label: int, question: str) -> str:
         # ``HybridRetriever`` is expected to return a list of texts
         context = [{"text": d} for d in docs]
 
-    return generator.generate(question, context)
+    return StreamingResponse(
+        generator.generate(question, context), media_type="text/plain"
+    )
 
 
 @app.post('/answer')
@@ -124,11 +127,11 @@ async def answer(query: Query):
         label = classifier.predict(query.question)
 
         # Step 2: generate answer based on the label
-        text = _route_answer(label, query.question)
+        response = _route_answer(label, query.question)
 
-        # Log success
-        append_log({"user": query.question, "model": text, "label": label, "status": "SUCCESS"})
-        return {'answer': text, 'label': label}
+        # Log success (streaming content is not captured here)
+        append_log({"user": query.question, "model": "[streaming]", "label": label, "status": "SUCCESS"})
+        return response
 
     except Exception as e:
         error_code = "ERR_UNKNOWN"
