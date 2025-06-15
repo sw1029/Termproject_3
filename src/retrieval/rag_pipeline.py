@@ -58,6 +58,7 @@ class AnswerGenerator:
                 model_name,
                 device_map="auto" if torch.cuda.is_available() else "cpu",
                 torch_dtype=torch.bfloat16,
+                use_safetensors=True,
             )
             self.streamer = TextIteratorStreamer(
                 self.tokenizer, skip_prompt=True, skip_special_tokens=True
