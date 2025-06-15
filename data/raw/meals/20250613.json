@@ -1,0 +1,156 @@
+{
+  "date": "20250613",
+  "crawled_at": "2025-06-16",
+  "items": [
+    {
+      "meal": "조식",
+      "who": "직원",
+      "cafeteria": 2,
+      "menu": "메뉴운영내역"
+    },
+    {
+      "meal": "조식",
+      "who": "직원",
+      "cafeteria": 3,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "조식",
+      "who": "직원",
+      "cafeteria": 4,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "조식",
+      "who": "직원",
+      "cafeteria": 5,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "조식",
+      "who": "직원",
+      "cafeteria": 6,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "조식",
+      "who": "학생",
+      "cafeteria": 2,
+      "menu": "정식(1000)\n\n소고기무우국(beef included)\n비엔나야채볶음(pork included)\n도시락김\n배추김치"
+    },
+    {
+      "meal": "조식",
+      "who": "학생",
+      "cafeteria": 3,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "조식",
+      "who": "학생",
+      "cafeteria": 4,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "조식",
+      "who": "학생",
+      "cafeteria": 5,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "중식",
+      "who": "직원",
+      "cafeteria": 2,
+      "menu": "정식(6000)\n\n돈육보쌈(pork included)\n모듬쌈\n얼갈이된장국\n무생채\n배추김치"
+    },
+    {
+      "meal": "중식",
+      "who": "직원",
+      "cafeteria": 3,
+      "menu": "정식(6000)\n\n보리열무비빔밥\n계란후라이\n무된장국\n메밀전병\n오렌지주스"
+    },
+    {
+      "meal": "중식",
+      "who": "직원",
+      "cafeteria": 4,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "중식",
+      "who": "직원",
+      "cafeteria": 5,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "중식",
+      "who": "학생",
+      "cafeteria": 2,
+      "menu": "정식(5500)\n\n닭다리백숙(chicken included)\n메추리알장조림\n요쿠르트\n깍두기"
+    },
+    {
+      "meal": "중식",
+      "who": "학생",
+      "cafeteria": 3,
+      "menu": "정식(4000)\n\n냉모밀국수\n유부초밥"
+    },
+    {
+      "meal": "중식",
+      "who": "학생",
+      "cafeteria": 4,
+      "menu": "정식(6000)\n\n피자돈까스(pork included)\n맑은우동국물\n크림소스팬네파스타(pork included)\n나쵸샐러드\n배추김치"
+    },
+    {
+      "meal": "중식",
+      "who": "학생",
+      "cafeteria": 5,
+      "menu": "정식(6000)\n\n해물짬뽕(pork included)\n탕수육(pork included)\n군만두(pork included)\n양배추샐러드\n단무지"
+    },
+    {
+      "meal": "석식",
+      "who": "직원",
+      "cafeteria": 2,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "석식",
+      "who": "직원",
+      "cafeteria": 3,
+      "menu": "정식(6000)\n\n김치볶음밥(pork included)\n무된장국\n누드소세지(pork included)\n닭가슴살겨자채(chicken included)\n자장떡볶이\n깍두기"
+    },
+    {
+      "meal": "석식",
+      "who": "직원",
+      "cafeteria": 4,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "석식",
+      "who": "직원",
+      "cafeteria": 5,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "석식",
+      "who": "학생",
+      "cafeteria": 2,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "석식",
+      "who": "학생",
+      "cafeteria": 3,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "석식",
+      "who": "학생",
+      "cafeteria": 4,
+      "menu": "운영안함"
+    },
+    {
+      "meal": "석식",
+      "who": "학생",
+      "cafeteria": 5,
+      "menu": "운영안함"
+    }
+  ]
+}
