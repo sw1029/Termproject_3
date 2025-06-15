@@ -47,7 +47,6 @@ class LLMClassifier:
             "text-classification",
             model=self.model,
             tokenizer=self.tokenizer,
-            device=device,
             return_all_scores=True,
         )
 
