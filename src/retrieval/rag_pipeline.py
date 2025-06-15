@@ -1,5 +1,7 @@
 import json
 from typing import List, Dict, Any
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 import torch
 from threading import Thread
@@ -50,7 +52,12 @@ class AnswerGenerator:
         self.tokenizer = None
         self.client = None
         self.streamer = None
-
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16,
+        )
         if self.model_type == "local":
             model_name = settings.generator_model_name_or_path
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -59,6 +66,7 @@ class AnswerGenerator:
                 device_map="auto" if torch.cuda.is_available() else "cpu",
                 torch_dtype=torch.bfloat16,
                 use_safetensors=True,
+                quantization_config=bnb_config
             )
             self.streamer = TextIteratorStreamer(
                 self.tokenizer, skip_prompt=True, skip_special_tokens=True
