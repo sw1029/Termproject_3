@@ -5,6 +5,10 @@ from datetime import datetime, timedelta
 from importlib import util
 import sys, types
 
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 def _load_meals_crawler():
     """Dynamically load ``MealsCrawler`` without importing other crawlers."""
     pkg = types.ModuleType('crawlers')
@@ -95,9 +99,15 @@ def get_context(question: str) -> list[dict]:
     date = _parse_date(question)
     path = OUT_DIR / f"{date}.json"
     prev_items = _load_items(path)
-    MealsCrawler = _load_meals_crawler()
-    crawler = MealsCrawler(OUT_DIR, date)
-    crawler.run()
+
+    if not path.exists():
+        logger.info("'%s' 날짜의 식단 정보가 로컬에 없어 새로 수집합니다.", date)
+        MealsCrawler = _load_meals_crawler()
+        crawler = MealsCrawler(OUT_DIR, date)
+        crawler.run()
+    else:
+        logger.info("'%s' 날짜의 로컬 식단 정보를 사용합니다.", date)
+
     items = _load_items(path)
 
     if _is_weekend(date):
@@ -124,11 +134,12 @@ def get_context(question: str) -> list[dict]:
     if not filtered or all(it.get("menu") == "운영안함" for it in filtered):
         prev_year = str(int(date[:4]) - 1) + date[4:]
         path_prev = OUT_DIR / f"{prev_year}.json"
-        MealsCrawler = _load_meals_crawler()
-        crawler = MealsCrawler(OUT_DIR, prev_year)
-        if crawler.run():
-            items = _load_items(path_prev)
-            filtered = _filter(items)
+        if not path_prev.exists():
+            MealsCrawler = _load_meals_crawler()
+            crawler = MealsCrawler(OUT_DIR, prev_year)
+            crawler.run()
+        items = _load_items(path_prev)
+        filtered = _filter(items)
     return filtered
 
 
