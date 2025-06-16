@@ -2,6 +2,12 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 import json
 from pathlib import Path
+import sys
+
+# Ensure the project root is on the Python path so that ``src`` can be imported
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 import torch
