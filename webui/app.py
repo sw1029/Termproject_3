@@ -1,6 +1,7 @@
-from flask import Flask, render_template
-from flask_socketio import SocketIO, emit
+from flask import Flask, render_template, request, jsonify
 import json
+import uuid
+from datetime import datetime
 from pathlib import Path
 import sys
 
@@ -9,10 +10,6 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-import torch
-
-from src.retrieval.rag_pipeline import HybridRetriever, AnswerGenerator
 from src.answers import (
     academic_calendar_answer,
     shuttle_bus_answer,
@@ -21,31 +18,19 @@ from src.answers import (
     notices_answer,
 )
 
+app = Flask(__name__)
 
-class LLMClassifier:
-    """Load fine-tuned sequence classification model to predict labels."""
+# Directory paths
+QUESTION_DIR = Path('question')
+ANSWER_DIR = Path('answer')
+PROCESSED_DIR = QUESTION_DIR / 'processed'
 
-    def __init__(self, model_path: str = "./models/classifier"):
-        self.model = AutoModelForSequenceClassification.from_pretrained(model_path)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.pipe = pipeline(
-            "text-classification",
-            model=self.model,
-            tokenizer=self.tokenizer,
-            return_all_scores=True,
-        )
+# Create directories if they do not exist
+QUESTION_DIR.mkdir(exist_ok=True)
+ANSWER_DIR.mkdir(exist_ok=True)
+PROCESSED_DIR.mkdir(exist_ok=True)
 
-    def predict(self, text: str) -> int:
-        result = self.pipe(text)[0]
-        best = max(result, key=lambda x: x["score"])
-        return int(best["label"].split("_")[-1])
-
-
-# Core pipeline components
-retriever = HybridRetriever()
-generator = AnswerGenerator()
-
-# Map labels to answer generator functions
+# Map labels to rule-based answer generators
 ANSWER_HANDLERS = {
     0: graduation_req_answer.generate_answer,
     1: notices_answer.generate_answer,
@@ -54,64 +39,48 @@ ANSWER_HANDLERS = {
     4: shuttle_bus_answer.generate_answer,
 }
 
-
-app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")
-
-# Initialize chatbot components
-classifier = LLMClassifier()
-
-QUESTIONS_PATH = Path("outputs/web_questions.json")
-
-
-def append_question(question: str):
-    """Store ``question`` in ``web_questions.json`` as a JSON array."""
-    QUESTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    items = []
-    if QUESTIONS_PATH.exists():
-        text = QUESTIONS_PATH.read_text(encoding="utf-8").strip()
-        if text:
-            try:
-                data = json.loads(text)
-                items = data if isinstance(data, list) else [data]
-            except json.JSONDecodeError:
-                items = [json.loads(line) for line in text.splitlines() if line.strip()]
-    items.append({"question": question})
-    with QUESTIONS_PATH.open("w", encoding="utf-8") as f:
-        json.dump(items, f, ensure_ascii=False, indent=2)
+def get_rule_based_response(label: int, question_text: str) -> str:
+    handler = ANSWER_HANDLERS.get(label)
+    if handler:
+        return handler(question_text)
+    return '적절한 답변을 찾지 못했습니다.'
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@socketio.on('send_message')
-def handle_send_message(data):
-    message = data['message']
-    append_question(message)
-    print(f'Received message: {message}')
-    emit('receive_message', {'sender': 'user', 'message': message})
+@app.route('/ask', methods=['POST'])
+def ask():
+    data = request.json
+    question_text = data.get('question')
+    if not question_text:
+        return jsonify({'error': 'Question is missing'}), 400
 
-    emit('receive_message', {'sender': 'bot', 'message': ''}, broadcast=True)
+    question_id = f"q_{datetime.now().strftime('%Y%m%d%H%M%S')}_{str(uuid.uuid4())[:4]}"
+    payload = {
+        'question_id': question_id,
+        'text': question_text,
+        'timestamp': datetime.now().isoformat()
+    }
+    file_path = QUESTION_DIR / f"{question_id}.json"
+    with file_path.open('w', encoding='utf-8') as f:
+        json.dump(payload, f, ensure_ascii=False, indent=4)
 
-    try:
-        label = classifier.predict(message)
+    return jsonify({'status': 'pending', 'question_id': question_id})
 
-        handler = ANSWER_HANDLERS.get(label)
-        if handler:
-            answer = handler(message)
-            socketio.emit('stream_token', {'token': answer})
-        else:
-            docs = retriever.retrieve(message)
-            for token in generator.generate(message, docs):
-                socketio.emit('stream_token', {'token': token})
+@app.route('/check_answer/<question_id>', methods=['GET'])
+def check_answer(question_id):
+    answer_id = question_id.replace('q_', 'a_')
+    answer_file = ANSWER_DIR / f"{answer_id}.json"
+    if not answer_file.exists():
+        return jsonify({'status': 'pending'})
 
-        socketio.emit('stream_end', {})
-
-    except Exception as e:
-        print(f"Error processing message: {e}")
-        error_message = "죄송합니다, 답변을 처리하는 데 문제가 발생했습니다."
-        socketio.emit('stream_token', {'token': error_message})
-        socketio.emit('stream_end', {})
+    with answer_file.open('r', encoding='utf-8') as f:
+        answer_data = json.load(f)
+    label = int(answer_data.get('label', -1))
+    original_question = answer_data.get('original_question', '')
+    response = get_rule_based_response(label, original_question)
+    return jsonify({'status': 'completed', 'label': label, 'response': response})
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

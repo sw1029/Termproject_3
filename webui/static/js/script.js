@@ -1,57 +1,48 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const socket = io();
     const chatBox = document.getElementById('chat-window');
     const chatForm = document.getElementById('chat-form');
     const msgInput = document.getElementById('msg-input');
 
-    function addMessage(sender, message, isStreaming = false) {
+    function addMessage(sender, message) {
         const div = document.createElement('div');
         div.classList.add('message', sender);
-        if (isStreaming) {
-            div.id = 'streaming-message';
-        }
-        div.innerHTML = marked.parse(message);
+        div.textContent = message;
         chatBox.appendChild(div);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
+    async function submitQuestion() {
+        const question = msgInput.value.trim();
+        if (!question) return;
+
+        addMessage('user', question);
+        msgInput.value = '';
+
+        const res = await fetch('/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question })
+        });
+        const data = await res.json();
+        if (data.question_id) {
+            addMessage('bot', '답변을 분류 중입니다...');
+            pollForAnswer(data.question_id);
+        }
+    }
+
+    function pollForAnswer(id) {
+        const interval = setInterval(async () => {
+            const resp = await fetch(`/check_answer/${id}`);
+            const data = await resp.json();
+            if (data.status === 'completed') {
+                clearInterval(interval);
+                addMessage('bot', data.response);
+            }
+        }, 3000);
+    }
+
     chatForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        const msg = msgInput.value.trim();
-        if (!msg) return;
-        socket.emit('send_message', { message: msg });
-        addMessage('user', msg);
-        addMessage('bot', '<div class="typing-indicator"></div>', true);
-        msgInput.value = '';
-    });
-
-    socket.on('receive_message', function (data) {
-        if (data.sender === 'user') {
-            addMessage('user', data.message);
-        } else {
-            addMessage('bot', '<div class="typing-indicator"></div>', true);
-        }
-    });
-
-    socket.on('stream_token', function (data) {
-        const streaming = document.getElementById('streaming-message');
-        if (streaming) {
-            const indicator = streaming.querySelector('.typing-indicator');
-            if (indicator) {
-                indicator.remove();
-            }
-            const temp = document.createElement('div');
-            temp.innerHTML = streaming.innerHTML;
-            const current = temp.textContent || temp.innerText || '';
-            streaming.innerHTML = marked.parse(current + data.token);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-    });
-
-    socket.on('stream_end', function () {
-        const streaming = document.getElementById('streaming-message');
-        if (streaming) {
-            streaming.removeAttribute('id');
-        }
+        submitQuestion();
     });
 });
