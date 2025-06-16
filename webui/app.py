@@ -75,11 +75,23 @@ def check_answer(question_id):
     if not answer_file.exists():
         return jsonify({'status': 'pending'})
 
-    with answer_file.open('r', encoding='utf-8') as f:
+    # Load existing classification result
+    with answer_file.open('r+', encoding='utf-8') as f:
         answer_data = json.load(f)
-    label = int(answer_data.get('label', -1))
-    original_question = answer_data.get('original_question', '')
-    response = get_rule_based_response(label, original_question)
+        label = int(answer_data.get('label', -1))
+        original_question = answer_data.get('original_question', '')
+
+        # Generate answer only once and persist it
+        if 'response' not in answer_data:
+            response = get_rule_based_response(label, original_question)
+            answer_data['response'] = response
+            answer_data['answered_at'] = datetime.now().isoformat()
+            f.seek(0)
+            json.dump(answer_data, f, ensure_ascii=False, indent=4)
+            f.truncate()
+        else:
+            response = answer_data['response']
+
     return jsonify({'status': 'completed', 'label': label, 'response': response})
 
 if __name__ == '__main__':
