@@ -1,13 +1,21 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
-import requests
 import json
 from pathlib import Path
 
-FASTAPI_URL = "http://127.0.0.1:8000/answer"
+from src.realtime_model import (
+    LLMClassifier,
+    ANSWER_HANDLERS,
+    retriever,
+    generator,
+)
+
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Initialize chatbot components
+classifier = LLMClassifier()
 
 QUESTIONS_PATH = Path("outputs/web_questions.json")
 
@@ -42,18 +50,22 @@ def handle_send_message(data):
     emit('receive_message', {'sender': 'bot', 'message': ''}, broadcast=True)
 
     try:
-        response = requests.post(FASTAPI_URL, json={'question': message}, stream=True)
-        response.raise_for_status()
+        label = classifier.predict(message)
 
-        for chunk in response.iter_content(chunk_size=None, decode_unicode=True):
-            if chunk:
-                socketio.emit('stream_token', {'token': chunk})
+        handler = ANSWER_HANDLERS.get(label)
+        if handler:
+            answer = handler(message)
+            socketio.emit('stream_token', {'token': answer})
+        else:
+            docs = retriever.retrieve(message)
+            for token in generator.generate(message, docs):
+                socketio.emit('stream_token', {'token': token})
 
         socketio.emit('stream_end', {})
 
-    except requests.exceptions.RequestException as e:
-        print(f"Error calling FastAPI: {e}")
-        error_message = "죄송합니다, 답변을 생성하는 데 문제가 발생했습니다."
+    except Exception as e:
+        print(f"Error processing message: {e}")
+        error_message = "죄송합니다, 답변을 처리하는 데 문제가 발생했습니다."
         socketio.emit('stream_token', {'token': error_message})
         socketio.emit('stream_end', {})
 
