@@ -6,6 +6,7 @@ from importlib import util
 import sys, types
 
 from src.utils.logger import get_logger
+from src.utils.time_parser import TimeParser, is_holiday
 
 logger = get_logger(__name__)
 
@@ -42,26 +43,10 @@ def _load_items(path: Path):
             return []
 
 
-def _parse_date(question: str) -> str:
-    question = question.strip()
-    now = datetime.now()
-
-    if "오늘" in question:
-        return now.strftime("%Y%m%d")
-    if "내일" in question:
-        return (now + timedelta(days=1)).strftime("%Y%m%d")
-    if "어제" in question:
-        return (now - timedelta(days=1)).strftime("%Y%m%d")
-
-    m = re.search(r"(\d{1,2})\s*월\s*(\d{1,2})\s*일", question)
-    if not m:
-        m = re.search(r"(\d{1,2})월(\d{1,2})일", question)
-    if m:
-        year = now.year
-        month, day = int(m.group(1)), int(m.group(2))
-        return f"{year}{month:02d}{day:02d}"
-
-    return now.strftime("%Y%m%d")
+def _parse_date(question: str) -> tuple[str, bool]:
+    parser = TimeParser(question)
+    dt, status = parser.parse()
+    return dt.strftime("%Y%m%d"), status == "exact"
 
 
 def _parse_meal(question: str):
@@ -93,10 +78,10 @@ def _search_fallback(question: str) -> str | None:
     return docs[0] if docs else None
 
 
-def get_context(question: str) -> list[dict]:
-    """Return filtered meal records as context for RAG."""
+def get_context(question: str) -> tuple[list[dict], str, bool]:
+    """Return filtered meal records as context, parsed date string and accuracy."""
     ensure_offline_db()
-    date = _parse_date(question)
+    date, exact = _parse_date(question)
     path = OUT_DIR / f"{date}.json"
     prev_items = _load_items(path)
 
@@ -140,15 +125,24 @@ def get_context(question: str) -> list[dict]:
             crawler.run()
         items = _load_items(path_prev)
         filtered = _filter(items)
-    return filtered
+    return filtered, date, exact
 
 
 def generate_answer(question: str) -> str:
-    context = get_context(question)
+    context, date, exact = get_context(question)
+    if is_holiday(datetime.strptime(date, "%Y%m%d").date()):
+        holiday = is_holiday(datetime.strptime(date, "%Y%m%d").date())
+        return f"{holiday}은 공휴일입니다."
+
     if not context:
         fb = _search_fallback(question)
         if fb:
             return fb
         return "식단 정보가 없습니다."
+
+    if not exact:
+        dt = datetime.strptime(date, "%Y%m%d").strftime("%Y-%m-%d")
+        return f"{dt} 일을 말씀하시는 게 맞을까요?"
+
     menus = ', '.join(it.get('menu', '') for it in context[:3])
     return f"찾은 식단 정보: {menus} 등"

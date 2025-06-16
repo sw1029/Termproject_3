@@ -1,5 +1,6 @@
 from pathlib import Path
-from difflib import SequenceMatcher
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
 import re
 
@@ -42,20 +43,15 @@ def _parse_dept(q: str) -> str | None:
     return m.group(1) if m else None
 
 
-def _similar(a: str, b: str) -> float:
-    return SequenceMatcher(None, a, b).ratio()
-
-
-def _find_best_dept(df: pd.DataFrame, query: str) -> str | None:
-    """Return department name with highest similarity to ``query``."""
-    best_score = 0.0
-    best_dept = None
-    for name in df["학과명"].dropna().unique():
-        score = _similar(query, str(name))
-        if score > best_score:
-            best_score = score
-            best_dept = name
-    return best_dept if best_score >= 0.5 else None
+def _find_best_dept(df: pd.DataFrame, query: str) -> list[str]:
+    """Return up to three department names most similar to ``query``."""
+    names = df["학과명"].dropna().unique().tolist()
+    if not names:
+        return []
+    vec = TfidfVectorizer().fit_transform(names + [query])
+    sims = cosine_similarity(vec[-1], vec[:-1]).flatten()
+    idxs = sims.argsort()[::-1][:3]
+    return [names[i] for i in idxs if sims[i] > 0.1]
 
 
 def _load_year_df(year: int) -> pd.DataFrame:
@@ -96,6 +92,11 @@ def _has_update_request(q: str) -> bool:
     return any(k in q for k in keywords)
 
 
+def _has_detail_request(q: str) -> bool:
+    keywords = ["필수", "선택", "과목", "학점", "논문", "세부"]
+    return any(k in q for k in keywords)
+
+
 def get_context(question: str):
     """Return graduation requirement table rows matching the question."""
     ensure_offline_db()
@@ -109,11 +110,11 @@ def get_context(question: str):
     if df.empty:
         return []
 
-    best_dept = _find_best_dept(df, dept_q)
-    if best_dept is None:
+    best_depts = _find_best_dept(df, dept_q)
+    if not best_depts:
         return []
 
-    major_df = df[df["학과명"] == best_dept]
+    major_df = df[df["학과명"].isin(best_depts)]
     return major_df.to_dict("records")
 
 
@@ -124,4 +125,7 @@ def generate_answer(question: str) -> str:
     sample = context[0]
     dept = sample.get("학과명", "")
     year = sample.get("year", "")
-    return f"{year}학년도 {dept} 졸업요건 예시"
+    prefix = ""
+    if _has_detail_request(question):
+        prefix = "세부사항은 해당 학과 공지사항을 직접 확인하셔야 합니다.\n"
+    return f"{prefix}{year}학년도 {dept} 졸업요건 예시"

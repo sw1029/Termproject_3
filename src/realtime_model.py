@@ -61,7 +61,15 @@ app = FastAPI()
 retriever = HybridRetriever()
 generator = AnswerGenerator()
 classifier = LLMClassifier()
-#classifier = SimpleClassifier()
+
+# Map labels to answer generator functions
+ANSWER_HANDLERS = {
+    0: graduation_req_answer.generate_answer,
+    1: notices_answer.generate_answer,
+    2: academic_calendar_answer.generate_answer,
+    3: meals_answer.generate_answer,
+    4: shuttle_bus_answer.generate_answer,
+}
 
 LOG_PATH = Path("outputs/realtime_output.json")
 
@@ -89,33 +97,16 @@ async def predict(query: Query):
     label = classifier.predict(query.question)
     return {'label': label}
 
-def _route_answer(label: int, question: str) -> StreamingResponse:
-    """Route question to the appropriate answer module and stream the answer."""
+def _route_answer(label: int, question: str) -> str:
+    """Route question to the appropriate answer handler."""
 
-    context = []
-    if label == 0:
-        df = graduation_req_answer.get_context(question)
-        if hasattr(df, 'to_dict'):
-            context = df.to_dict('records')
-        else:
-            context = df
-    elif label == 1:
-        context = notices_answer.get_context(question)
-    elif label == 2:
-        context = academic_calendar_answer.get_context(question)
-    elif label == 3:
-        context = meals_answer.get_context(question)
-    elif label == 4:
-        context = shuttle_bus_answer.get_context(question)
+    handler = ANSWER_HANDLERS.get(label)
+    if handler:
+        return handler(question)
 
-    if not context:
-        docs = retriever.retrieve(question)
-        # ``HybridRetriever`` is expected to return a list of texts
-        context = [{"text": d} for d in docs]
-
-    return StreamingResponse(
-        generator.generate(question, context), media_type="text/plain"
-    )
+    docs = retriever.retrieve(question)
+    context = [{"text": d} for d in docs]
+    return "".join(list(generator.generate(question, context)))
 
 
 @app.post('/answer')
@@ -127,11 +118,10 @@ async def answer(query: Query):
         label = classifier.predict(query.question)
 
         # Step 2: generate answer based on the label
-        response = _route_answer(label, query.question)
+        response_text = _route_answer(label, query.question)
 
-        # Log success (streaming content is not captured here)
-        append_log({"user": query.question, "model": "[streaming]", "label": label, "status": "SUCCESS"})
-        return response
+        append_log({"user": query.question, "model": response_text, "label": label, "status": "SUCCESS"})
+        return {"answer": response_text}
 
     except Exception as e:
         error_code = "ERR_UNKNOWN"

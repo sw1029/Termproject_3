@@ -2,7 +2,8 @@ from pathlib import Path
 import csv
 import json
 import re
-from difflib import SequenceMatcher
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 from importlib import util
 import sys, types
@@ -37,15 +38,14 @@ def _parse_dept(q: str) -> str | None:
     m = re.search(r'([\w가-힣]+(?:학과|학부|대학원|대학))', q)
     return m.group(1) if m else None
 
-
-def _similar(a: str, b: str) -> float:
-    """Return a similarity ratio between two strings."""
-    return SequenceMatcher(None, a, b).ratio()
-
-
 def _has_update_request(q: str) -> bool:
     keywords = ['변동', '업데이트', '바뀐', '변경']
     return any(k in q for k in keywords)
+
+
+def _is_specific_request(q: str) -> bool:
+    patterns = [r'\d+일', '있는지', '여부', '있나요', '있습니까']
+    return any(re.search(p, q) for p in patterns)
 
 
 def _search_fallback(question: str) -> str | None:
@@ -74,26 +74,32 @@ def get_context(question: str) -> list[dict]:
     def _filter(records: list[dict]) -> list[dict]:
         if not dept:
             return records
-        scored: list[tuple[float, dict]] = []
-        for r in records:
-            candidates = [r.get('dept', ''), r.get('college', ''), r.get('title', '')]
-            score = max(_similar(dept, c) for c in candidates)
-            if score >= 0.5:
-                scored.append((score, r))
-        if not scored:
+        names = [r.get('dept', '') for r in records]
+        if not names:
             return []
+        vec = TfidfVectorizer().fit_transform(names + [dept])
+        sims = cosine_similarity(vec[-1], vec[:-1]).flatten()
+        scored = [(s, records[i]) for i, s in enumerate(sims)]
         scored.sort(key=lambda x: x[0], reverse=True)
-        return [r for _, r in scored]
+        top = [r for _, r in scored[:3] if _ > 0.1]
+        return top
 
     return _filter(rows)
 
 
 def generate_answer(question: str) -> str:
     context = get_context(question)
+    dept = _parse_dept(question) or ''
+    prefix = f"{dept} 최신 공지사항입니다" if dept else "최신 공지사항입니다"
+    head = ""
+    if _is_specific_request(question):
+        head = "죄송하지만 해당 정보는 직접 공지사항을 확인하셔야 합니다.\n"
+
     if context:
-        sample = ', '.join(r['title'] for r in context[:3])
-        return f"공지 예시: {sample} 등"
+        titles = '\n'.join(f"- {r['title']}" for r in context[:3])
+        return f"{head}{prefix}\n{titles}"
+
     fb = _search_fallback(question)
     if fb:
         return fb
-    return "요청하신 공지사항을 찾지 못했습니다."
+    return f"{head}{prefix}\n공지사항을 찾지 못했습니다."

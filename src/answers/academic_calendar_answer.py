@@ -1,10 +1,11 @@
 from pathlib import Path
 import json
 import re
-from datetime import datetime
+from datetime import datetime, date
 from ..crawlers.academic_calendar import AcademicCalendarCrawler
 from ..retrieval.rag_pipeline import HybridRetriever
 from . import ensure_offline_db
+from src.utils.time_parser import TimeParser, is_holiday
 
 OUT_DIR = Path('data/raw/academic_calendar')
 
@@ -20,25 +21,15 @@ def _load_items(path: Path):
 
 
 def _parse_year_month_day(q: str):
-    """Extract year, month and day from question if present."""
-    year = None
-    m = re.search(r"(20\d{2})\s*년", q)
-    if m:
-        year = int(m.group(1))
-
-    month = day = None
-    m = re.search(r"(\d{1,2})\s*월\s*(\d{1,2})\s*일", q)
-    if not m:
-        m = re.search(r"(\d{1,2})월(\d{1,2})일", q)
-    if m:
-        month = int(m.group(1))
-        day = int(m.group(2))
-        return year, month, day
-    m = re.search(r"(\d{1,2})\s*월", q)
-    if m:
-        month = int(m.group(1))
-        return year, month, None
-    return year, None, None
+    parser = TimeParser(q)
+    dt, status = parser.parse()
+    if status == "failed":
+        return None, None, None, status
+    if status == "year":
+        return dt.year, None, None, status
+    if status == "month":
+        return dt.year, dt.month, None, status
+    return dt.year, dt.month, dt.day, status
 
 
 def _has_update_request(q: str) -> bool:
@@ -54,10 +45,10 @@ def _search_fallback(question: str) -> str | None:
     return docs[0] if docs else None
 
 
-def get_context(question: str) -> list[dict]:
+def get_context(question: str) -> tuple[list[dict], tuple[int|None,int|None,int|None], str]:
     """Return matching academic calendar events as context."""
     ensure_offline_db()
-    year, month, day = _parse_year_month_day(question)
+    year, month, day, status = _parse_year_month_day(question)
     year = year or datetime.now().year
     path = OUT_DIR / str(year) / 'data.json'
     items = _load_items(path)
@@ -69,8 +60,8 @@ def get_context(question: str) -> list[dict]:
             new_items = _load_items(path)
             new_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in new_items}
             diff = [json.loads(s) for s in new_set - prev_set]
-            return diff
-        return []
+            return diff, (year, month, day), "exact"
+        return [], (year, month, day), "exact"
 
     def _filter(records: list[dict]) -> list[dict]:
         if month is None:
@@ -88,15 +79,30 @@ def get_context(question: str) -> list[dict]:
         if crawler.run():
             items = _load_items(path)
             matches = _filter(items)
-    return matches
+    return matches, (year, month, day), status
 
 
 def generate_answer(question: str) -> str:
-    context = get_context(question)
+    context, (year, month, day), status = get_context(question)
+    if month and day:
+        dt = date(year, month, day)
+        if is_holiday(dt):
+            return f"{is_holiday(dt)}은 공휴일입니다."
+
     if not context:
         fb = _search_fallback(question)
         if fb:
             return fb
         return "학사일정 정보를 찾지 못했습니다."
+
+    if status != "exact":
+        if year and month and status == "month":
+            dt = date(year, month, 1)
+        elif year and status == "year":
+            dt = date(year, 1, 1)
+        else:
+            dt = datetime.now().date()
+        return f"{dt.strftime('%Y-%m-%d')} 일을 말씀하시는 게 맞을까요?"
+
     sample = ', '.join(f"{c.get('date')} {c.get('event')}" for c in context[:3])
     return f"학사일정 예시: {sample} 등"
