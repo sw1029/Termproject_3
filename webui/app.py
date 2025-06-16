@@ -3,12 +3,50 @@ from flask_socketio import SocketIO, emit
 import json
 from pathlib import Path
 
-from src.realtime_model import (
-    LLMClassifier,
-    ANSWER_HANDLERS,
-    retriever,
-    generator,
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+import torch
+
+from src.retrieval.rag_pipeline import HybridRetriever, AnswerGenerator
+from src.answers import (
+    academic_calendar_answer,
+    shuttle_bus_answer,
+    graduation_req_answer,
+    meals_answer,
+    notices_answer,
 )
+
+
+class LLMClassifier:
+    """Load fine-tuned sequence classification model to predict labels."""
+
+    def __init__(self, model_path: str = "./models/classifier"):
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.pipe = pipeline(
+            "text-classification",
+            model=self.model,
+            tokenizer=self.tokenizer,
+            return_all_scores=True,
+        )
+
+    def predict(self, text: str) -> int:
+        result = self.pipe(text)[0]
+        best = max(result, key=lambda x: x["score"])
+        return int(best["label"].split("_")[-1])
+
+
+# Core pipeline components
+retriever = HybridRetriever()
+generator = AnswerGenerator()
+
+# Map labels to answer generator functions
+ANSWER_HANDLERS = {
+    0: graduation_req_answer.generate_answer,
+    1: notices_answer.generate_answer,
+    2: academic_calendar_answer.generate_answer,
+    3: meals_answer.generate_answer,
+    4: shuttle_bus_answer.generate_answer,
+}
 
 
 app = Flask(__name__)
