@@ -10,19 +10,19 @@ import sys, types
 from src.utils.config import settings
 
 def _load_notice_crawler():
-    pkg = types.ModuleType("crawlers")
+    pkg = types.ModuleType("src.crawlers")
     base_dir = Path(__file__).resolve().parent.parent
     base_path = base_dir / "crawlers" / "base.py"
     notice_path = base_dir / "crawlers" / "notices.py"
 
-    base_spec = util.spec_from_file_location("crawlers.base", base_path)
+    base_spec = util.spec_from_file_location("src.crawlers.base", base_path)
     base_mod = util.module_from_spec(base_spec)
     base_spec.loader.exec_module(base_mod)
 
-    sys.modules.setdefault("crawlers", pkg)
-    sys.modules["crawlers.base"] = base_mod
+    sys.modules.setdefault("src.crawlers", pkg)
+    sys.modules["src.crawlers.base"] = base_mod
 
-    spec = util.spec_from_file_location("crawlers.notices", notice_path)
+    spec = util.spec_from_file_location("src.crawlers.notices", notice_path)
     mod = util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod.NoticeCrawler

@@ -13,19 +13,21 @@ logger = get_logger(__name__)
 
 def _load_meals_crawler():
     """Dynamically load ``MealsCrawler`` without importing other crawlers."""
-    pkg = types.ModuleType("crawlers")
+    # Use fully qualified package names so that relative imports inside the
+    # crawler modules work correctly when loaded dynamically.
+    pkg = types.ModuleType("src.crawlers")
     base_dir = Path(__file__).resolve().parent.parent
     base_path = base_dir / "crawlers" / "base.py"
     meals_path = base_dir / "crawlers" / "meals.py"
 
-    base_spec = util.spec_from_file_location("crawlers.base", base_path)
+    base_spec = util.spec_from_file_location("src.crawlers.base", base_path)
     base_mod = util.module_from_spec(base_spec)
     base_spec.loader.exec_module(base_mod)
 
-    sys.modules.setdefault("crawlers", pkg)
-    sys.modules["crawlers.base"] = base_mod
+    sys.modules.setdefault("src.crawlers", pkg)
+    sys.modules["src.crawlers.base"] = base_mod
 
-    spec = util.spec_from_file_location("crawlers.meals", meals_path)
+    spec = util.spec_from_file_location("src.crawlers.meals", meals_path)
     mod = util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod.MealsCrawler
