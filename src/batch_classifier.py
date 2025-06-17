@@ -11,6 +11,7 @@ import json
 import glob
 import shutil
 from datetime import datetime
+import time
 from pathlib import Path
 
 # Dummy classifier for demonstration. Replace with actual model in the notebook.
@@ -33,6 +34,7 @@ ANSWER_DIR.mkdir(exist_ok=True)
 PROCESSED_DIR.mkdir(exist_ok=True)
 
 def run_classification() -> None:
+    print('Checking for new questions...')
     files = glob.glob(str(QUESTION_DIR / '*.json'))
     if not files:
         print('No new questions found.')
@@ -61,4 +63,9 @@ def run_classification() -> None:
             print(f'Failed to process {path}: {e}')
 
 if __name__ == '__main__':
-    run_classification()
+    try:
+        while True:
+            run_classification()
+            time.sleep(5)
+    except KeyboardInterrupt:
+        print('Stopped.')
