@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify
+from flask_socketio import SocketIO, emit
 import json
 import uuid
 from datetime import datetime
@@ -19,6 +20,7 @@ from src.answers import (
 )
 
 app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Directory paths
 QUESTION_DIR = Path('question')
@@ -94,5 +96,56 @@ def check_answer(question_id):
 
     return jsonify({'status': 'completed', 'label': label, 'response': response})
 
+# WebSocket handlers
+@socketio.on('ask_question')
+def handle_ask_question(data):
+    """Receive a question via WebSocket and start waiting for an answer."""
+    question_text = data.get('question')
+    if not question_text:
+        emit('error', {'message': 'Question is missing'})
+        return
+
+    question_id = f"q_{datetime.now().strftime('%Y%m%d%H%M%S')}_{str(uuid.uuid4())[:4]}"
+    payload = {
+        'question_id': question_id,
+        'text': question_text,
+        'timestamp': datetime.now().isoformat(),
+    }
+    file_path = QUESTION_DIR / f"{question_id}.json"
+    with file_path.open('w', encoding='utf-8') as f:
+        json.dump(payload, f, ensure_ascii=False, indent=4)
+
+    emit('question_received', {'question_id': question_id})
+    socketio.start_background_task(wait_for_answer, question_id, request.sid)
+
+
+def wait_for_answer(question_id: str, sid: str) -> None:
+    """Wait for the classifier to produce an answer file and emit it."""
+    answer_id = question_id.replace('q_', 'a_')
+    answer_file = ANSWER_DIR / f"{answer_id}.json"
+    while not answer_file.exists():
+        socketio.sleep(3)
+
+    with answer_file.open('r+', encoding='utf-8') as f:
+        answer_data = json.load(f)
+        label = int(answer_data.get('label', -1))
+        original_question = answer_data.get('original_question', '')
+
+        if 'response' not in answer_data:
+            response = get_rule_based_response(label, original_question)
+            answer_data['response'] = response
+            answer_data['answered_at'] = datetime.now().isoformat()
+            f.seek(0)
+            json.dump(answer_data, f, ensure_ascii=False, indent=4)
+            f.truncate()
+        else:
+            response = answer_data['response']
+
+    socketio.emit(
+        'answer_response',
+        {'label': label, 'response': response, 'question_id': question_id},
+        to=sid,
+    )
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)

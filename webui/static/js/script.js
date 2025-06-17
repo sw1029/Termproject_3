@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const socket = io();
     const chatBox = document.getElementById('chat-window');
     const chatForm = document.getElementById('chat-form');
     const msgInput = document.getElementById('msg-input');
@@ -11,35 +12,20 @@ document.addEventListener('DOMContentLoaded', function () {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    async function submitQuestion() {
+    function submitQuestion() {
         const question = msgInput.value.trim();
         if (!question) return;
 
         addMessage('user', question);
         msgInput.value = '';
 
-        const res = await fetch('/ask', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question })
-        });
-        const data = await res.json();
-        if (data.question_id) {
-            addMessage('bot', '답변을 분류 중입니다...');
-            pollForAnswer(data.question_id);
-        }
+        socket.emit('ask_question', { question });
+        addMessage('bot', '답변을 분류 중입니다...');
     }
 
-    function pollForAnswer(id) {
-        const interval = setInterval(async () => {
-            const resp = await fetch(`/check_answer/${id}`);
-            const data = await resp.json();
-            if (data.status === 'completed') {
-                clearInterval(interval);
-                addMessage('bot', data.response);
-            }
-        }, 3000);
-    }
+    socket.on('answer_response', function (data) {
+        addMessage('bot', data.response);
+    });
 
     chatForm.addEventListener('submit', function (e) {
         e.preventDefault();
