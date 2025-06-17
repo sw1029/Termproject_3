@@ -7,6 +7,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from importlib import util
 import sys, types
+from src.utils.config import settings
 
 def _load_notice_crawler():
     pkg = types.ModuleType("crawlers")
@@ -28,7 +29,7 @@ def _load_notice_crawler():
 from ..retrieval.rag_pipeline import HybridRetriever
 from . import ensure_offline_db
 
-OUT_DIR = Path('data/raw/notices')
+OUT_DIR = settings.data_dir / 'raw/notices'
 
 
 def _load_rows() -> list[dict]:

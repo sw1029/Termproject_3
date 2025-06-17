@@ -3,6 +3,8 @@ from datetime import datetime
 import requests
 from lxml import html
 
+from ..utils.config import settings
+
 from .base import BaseCrawler
 
 class MealsCrawler(BaseCrawler):
@@ -78,5 +80,5 @@ class MealsCrawler(BaseCrawler):
             json.dump(payload, f, ensure_ascii=False, indent=2)
 
 if __name__ == '__main__':
-    crawler = MealsCrawler(Path('data/raw/meals'))
+    crawler = MealsCrawler(settings.data_dir / 'raw/meals')
     crawler.run()

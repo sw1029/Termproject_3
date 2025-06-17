@@ -6,12 +6,13 @@ import pdfplumber
 import pandas as pd
 
 from .base import BaseCrawler
+from ..utils.config import settings
 
 
 class GraduationRequirementCrawler(BaseCrawler):
     """Parse graduation requirement PDFs located under ``data/pdf/``."""
 
-    PDF_DIR = Path("data/pdf")
+    PDF_DIR = settings.data_dir / "pdf"
 
     def __init__(self, out_dir: Path, year: int | None = None):
         super().__init__(out_dir)
@@ -69,5 +70,5 @@ class GraduationRequirementCrawler(BaseCrawler):
         df.to_csv(path, index=False, encoding='utf-8-sig')
 
 if __name__ == '__main__':
-    crawler = GraduationRequirementCrawler(Path('data/raw/graduation_req'))
+    crawler = GraduationRequirementCrawler(settings.data_dir / 'raw/graduation_req')
     crawler.run()

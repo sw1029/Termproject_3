@@ -3,6 +3,8 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 
+from ..utils.config import settings
+
 from .base import BaseCrawler
 
 class AcademicCalendarCrawler(BaseCrawler):
@@ -39,5 +41,5 @@ class AcademicCalendarCrawler(BaseCrawler):
         return results
 
 if __name__ == '__main__':
-    crawler = AcademicCalendarCrawler(Path('data/raw/academic_calendar'))
+    crawler = AcademicCalendarCrawler(settings.data_dir / 'raw/academic_calendar')
     crawler.run()

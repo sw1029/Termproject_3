@@ -2,6 +2,8 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
+from ..utils.config import settings
+
 from .base import BaseCrawler
 
 class ShuttleBusCrawler(BaseCrawler):
@@ -32,5 +34,5 @@ class ShuttleBusCrawler(BaseCrawler):
         return results
 
 if __name__ == '__main__':
-    crawler = ShuttleBusCrawler(Path('data/raw/shuttle_bus'))
+    crawler = ShuttleBusCrawler(settings.data_dir / 'raw/shuttle_bus')
     crawler.run()

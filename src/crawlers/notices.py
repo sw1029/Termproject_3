@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Iterable, List, Tuple
 from urllib.parse import urljoin
 
+from ..utils.config import settings
+
 import requests
 from bs4 import BeautifulSoup, Tag
 
@@ -137,7 +139,7 @@ def scrape_generic(college: str, dept: str, url: str) -> List[dict]:
 class NoticeCrawler(BaseCrawler):
     """Crawl department notice boards listed in links.txt."""
 
-    LINKS_FILE = Path("data/links.txt")
+    LINKS_FILE = settings.data_dir / "links.txt"
 
     def fetch(self) -> List[Tuple[str, str, str]]:
         """Load department link list.
@@ -183,5 +185,5 @@ class NoticeCrawler(BaseCrawler):
 
 
 if __name__ == "__main__":
-    crawler = NoticeCrawler(Path("data/raw/notices"))
+    crawler = NoticeCrawler(settings.data_dir / "raw/notices")
     crawler.run()

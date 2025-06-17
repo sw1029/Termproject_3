@@ -7,6 +7,7 @@ import sys, types
 
 from src.utils.logger import get_logger
 from src.utils.time_parser import TimeParser, is_holiday
+from src.utils.config import settings
 
 logger = get_logger(__name__)
 
@@ -36,7 +37,7 @@ def _is_weekend(date_str: str) -> bool:
     dt = datetime.strptime(date_str, "%Y%m%d")
     return dt.weekday() >= 5
 
-OUT_DIR = Path('data/raw/meals')
+OUT_DIR = settings.data_dir / 'raw/meals'
 
 
 def _load_items(path: Path):
