@@ -11,6 +11,75 @@ from src.utils.config import settings
 
 logger = get_logger(__name__)
 
+# Fixed menu for the 1st cafeteria which does not change by date
+CAFETERIA1_MENU = [
+    {"cafeteria": 1, "category": "라면&간식", "menu": "라면: 2,500원"},
+    {"cafeteria": 1, "category": "라면&간식", "menu": "떡만두라면: 3,000원"},
+    {"cafeteria": 1, "category": "라면&간식", "menu": "해장라면: 3,000원"},
+    {"cafeteria": 1, "category": "라면&간식", "menu": "치즈라면: 3,000원"},
+    {"cafeteria": 1, "category": "라면&간식", "menu": "부대라면: 4,000원"},
+    {"cafeteria": 1, "category": "라면&간식", "menu": "김밥: 3,000원"},
+    {"cafeteria": 1, "category": "라면&간식", "menu": "공기밥: 500원"},
+
+    {"cafeteria": 1, "category": "양식", "menu": "등심왕돈까스: 5,500원"},
+    {"cafeteria": 1, "category": "양식", "menu": "눈꽃치즈돈까스: 6,500원"},
+    {"cafeteria": 1, "category": "양식", "menu": "파채돈까스: 6,000원"},
+    {"cafeteria": 1, "category": "양식", "menu": "돈까스&파스타: 6,000원"},
+    {"cafeteria": 1, "category": "양식", "menu": "닭다리살스테이크: 6,000원"},
+    {"cafeteria": 1, "category": "양식", "menu": "파닭스테이크: 6,500원"},
+    {"cafeteria": 1, "category": "양식", "menu": "베이컨로제파스타: 5,800원"},
+
+    {"cafeteria": 1, "category": "스낵", "menu": "버터김치볶음밥: 5,600원"},
+    {"cafeteria": 1, "category": "스낵", "menu": "버터김치치즈볶음밥: 6,500원"},
+    {"cafeteria": 1, "category": "스낵", "menu": "치즈 토핑: 1,000원"},
+    {"cafeteria": 1, "category": "스낵", "menu": "소불고기 토핑: 2,000원"},
+    {"cafeteria": 1, "category": "스낵", "menu": "떡갈비 토핑: 1,000원"},
+    {"cafeteria": 1, "category": "스낵", "menu": "감자고로케 토핑: 1,000원"},
+    {"cafeteria": 1, "category": "스낵", "menu": "날치알 토핑: 1,000원"},
+    {"cafeteria": 1, "category": "스낵", "menu": "구운계란 토핑: 500원"},
+    {"cafeteria": 1, "category": "스낵", "menu": "컵버터감자칩: 2,000원"},
+
+    {"cafeteria": 1, "category": "한식", "menu": "비빔밥: 7,000원"},
+    {"cafeteria": 1, "category": "한식", "menu": "묵은지김치찌개: 5,800원"},
+    {"cafeteria": 1, "category": "한식", "menu": "부대햄콩나물찌개: 6,000원"},
+    {"cafeteria": 1, "category": "한식", "menu": "우삼겹된장찌개: 6,600원"},
+    {"cafeteria": 1, "category": "한식", "menu": "별곰소고기국밥: 7,000원"},
+    {"cafeteria": 1, "category": "한식", "menu": "뚝배기곱창비빔밥: 5,800원"},
+    {"cafeteria": 1, "category": "한식", "menu": "치즈 추가: 1,500원"},
+    {"cafeteria": 1, "category": "한식", "menu": "구운계란 (2개): 1,000원"},
+    {"cafeteria": 1, "category": "한식", "menu": "공기밥: 500원"},
+
+    {"cafeteria": 1, "category": "일식", "menu": "연돈스타일등심덮밥: 6,300원"},
+    {"cafeteria": 1, "category": "일식", "menu": "매운부타동고기덮밥: 7,500원"},
+    {"cafeteria": 1, "category": "일식", "menu": "고소한카레덮밥: 5,800원"},
+    {"cafeteria": 1, "category": "일식", "menu": "부타동고기덮밥: 5,800원"},
+    {"cafeteria": 1, "category": "일식", "menu": "치킨가라아게마요: 6,500원"},
+    {"cafeteria": 1, "category": "일식", "menu": "새콤비기생우동: 6,500원"},
+    {"cafeteria": 1, "category": "일식", "menu": "매운쌀국수해장우동: 5,300원"},
+    {"cafeteria": 1, "category": "일식", "menu": "가쓰오부시생우동: 5,000원"},
+    {"cafeteria": 1, "category": "일식", "menu": "마제소바: 6,000원"},
+    {"cafeteria": 1, "category": "일식", "menu": "1L치킨포테샐러드: 6,800원"},
+    {"cafeteria": 1, "category": "일식", "menu": "½우동+주먹밥+가라아게4p: 7,500원"},
+    {"cafeteria": 1, "category": "일식", "menu": "꼬치어묵2+우삼겹우동: 5,800원"},
+    {"cafeteria": 1, "category": "일식", "menu": "컵가라아게4p: 2,000원"},
+    {"cafeteria": 1, "category": "일식", "menu": "1/2우동: 3,500원"},
+    {"cafeteria": 1, "category": "일식", "menu": "주먹밥 (2개): 1,500원"},
+
+    {"cafeteria": 1, "category": "중식", "menu": "차돌온면: 6,500원"},
+    {"cafeteria": 1, "category": "중식", "menu": "매운차돌온면: 6,500원"},
+    {"cafeteria": 1, "category": "중식", "menu": "온국밥: 6,500원"},
+    {"cafeteria": 1, "category": "중식", "menu": "매운온국밥: 6,500원"},
+    {"cafeteria": 1, "category": "중식", "menu": "비빔면: 5,800원"},
+    {"cafeteria": 1, "category": "중식", "menu": "냉면: 5,800원"},
+    {"cafeteria": 1, "category": "중식", "menu": "마라맛: 500원"},
+    {"cafeteria": 1, "category": "중식", "menu": "공기밥: 500원"},
+]
+
+# Pattern to match references to an n-th cafeteria.
+# Handles phrases like "1학생회관", "1학", or "2학 식당" while
+# avoiding words like "1학기" or "1학년".
+CAFE_RE = re.compile(r"(\d+)\s*(?:학생\s*회관|학(?:관)?(?!년|기)|학식(?:당)?|학\b)")
+
 def _load_meals_crawler():
     """Dynamically load ``MealsCrawler`` without importing other crawlers."""
     # Use fully qualified package names so that relative imports inside the
@@ -59,6 +128,10 @@ def _parse_date(question: str) -> tuple[str, bool]:
 
 
 def _parse_meal(question: str):
+    # When the user explicitly specifies a cafeteria (e.g. "1학"),
+    # skip meal filtering so that the entire menu is returned.
+    if _parse_cafeteria(question) == 1:
+        return None
     if '조식' in question or '아침' in question:
         return '조식'
     if '중식' in question or '점심' in question:
@@ -69,7 +142,8 @@ def _parse_meal(question: str):
 
 
 def _parse_cafeteria(question: str):
-    m = re.search(r"(\d)\s*학생회관", question)
+    """Return cafeteria number if mentioned in the question."""
+    m = CAFE_RE.search(question)
     if m:
         return int(m.group(1))
     return None
@@ -91,6 +165,13 @@ def get_context(question: str) -> tuple[list[dict], str, bool]:
     """Return filtered meal records as context, parsed date string and accuracy."""
     ensure_offline_db()
     date, exact = _parse_date(question)
+    cafeteria = _parse_cafeteria(question)
+
+    if cafeteria == 1:
+        if _is_weekend(date):
+            return [{"message": "주말에는 운영하지 않습니다."}], date, True
+        return CAFETERIA1_MENU, date, True
+
     path = OUT_DIR / f"{date}.json"
     prev_items = _load_items(path)
 
@@ -113,7 +194,6 @@ def get_context(question: str) -> tuple[list[dict], str, bool]:
         diff = [json.loads(s) for s in new_set - prev_set]
         return diff
 
-    cafeteria = _parse_cafeteria(question)
     meal_type = _parse_meal(question)
 
     def _filter(records: list[dict]) -> list[dict]:
