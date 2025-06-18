@@ -4,6 +4,7 @@ import json
 import uuid
 from datetime import datetime
 from pathlib import Path
+import os
 import sys
 
 # Ensure the project root is on the Python path so that ``src`` can be imported
@@ -32,6 +33,10 @@ QUESTION_DIR.mkdir(exist_ok=True)
 ANSWER_DIR.mkdir(exist_ok=True)
 PROCESSED_DIR.mkdir(exist_ok=True)
 
+# Path for storing question/answer history
+OUTPUTS_DIR = Path('outputs')
+QA_JSON_PATH = OUTPUTS_DIR / 'chat_output.json'
+
 # Map labels to rule-based answer generators
 ANSWER_HANDLERS = {
     0: graduation_req_answer.generate_answer,
@@ -46,6 +51,30 @@ def get_rule_based_response(label: int, question_text: str) -> str:
     if handler:
         return handler(question_text)
     return '적절한 답변을 찾지 못했습니다.'
+
+
+def append_qa(question: str, answer: str) -> None:
+    """Append a question/answer pair to ``chat_output.json``."""
+    OUTPUTS_DIR.mkdir(exist_ok=True)
+    records = []
+    if QA_JSON_PATH.exists():
+        try:
+            with QA_JSON_PATH.open('r', encoding='utf-8') as f:
+                records = json.load(f)
+                if not isinstance(records, list):
+                    records = [records]
+        except json.JSONDecodeError:
+            with QA_JSON_PATH.open('r', encoding='utf-8') as f:
+                records = [json.loads(line) for line in f if line.strip()]
+
+    records.append({
+        'question': question,
+        'answer': answer,
+        'timestamp': datetime.now().isoformat(),
+    })
+
+    with QA_JSON_PATH.open('w', encoding='utf-8') as f:
+        json.dump(records, f, ensure_ascii=False, indent=4)
 
 @app.route('/')
 def index():
@@ -91,6 +120,7 @@ def check_answer(question_id):
             f.seek(0)
             json.dump(answer_data, f, ensure_ascii=False, indent=4)
             f.truncate()
+            append_qa(original_question, response)
         else:
             response = answer_data['response']
 
@@ -138,6 +168,7 @@ def wait_for_answer(question_id: str, sid: str) -> None:
             f.seek(0)
             json.dump(answer_data, f, ensure_ascii=False, indent=4)
             f.truncate()
+            append_qa(original_question, response)
         else:
             response = answer_data['response']
 
