@@ -2,8 +2,7 @@ from pathlib import Path
 import csv
 import json
 import re
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from thefuzz import process
 
 from importlib import util
 import sys, types
@@ -84,12 +83,15 @@ def get_context(question: str) -> list[dict]:
         names = [r.get('dept', '') for r in records]
         if not names:
             return []
-        vec = TfidfVectorizer().fit_transform(names + [dept])
-        sims = cosine_similarity(vec[-1], vec[:-1]).flatten()
-        scored = [(s, records[i]) for i, s in enumerate(sims)]
-        scored.sort(key=lambda x: x[0], reverse=True)
-        top = [r for _, r in scored[:3] if _ > 0.1]
-        return top
+        scored = process.extract(dept, names, limit=3)
+        result = []
+        for name, score in scored:
+            if score >= 80:
+                for r in records:
+                    if r.get('dept', '') == name:
+                        result.append(r)
+                        break
+        return result
 
     return _filter(rows)
 

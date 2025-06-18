@@ -18,3 +18,5 @@ tokenizers
 pydantic_settings
 jupyter
 scikit-learn
+thefuzz
+python-Levenshtein

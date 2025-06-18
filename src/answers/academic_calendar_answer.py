@@ -51,6 +51,9 @@ def get_context(question: str) -> tuple[list[dict], tuple[int|None,int|None,int|
     year, month, day, status = _parse_year_month_day(question)
     year = year or datetime.now().year
     path = OUT_DIR / str(year) / 'data.json'
+    if not path.exists():
+        crawler = AcademicCalendarCrawler(OUT_DIR, year)
+        crawler.run()
     items = _load_items(path)
 
     if _has_update_request(question):

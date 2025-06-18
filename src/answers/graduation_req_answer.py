@@ -1,6 +1,5 @@
 from pathlib import Path
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from thefuzz import process
 import pandas as pd
 import re
 
@@ -48,10 +47,8 @@ def _find_best_dept(df: pd.DataFrame, query: str) -> list[str]:
     names = df["학과명"].dropna().unique().tolist()
     if not names:
         return []
-    vec = TfidfVectorizer().fit_transform(names + [query])
-    sims = cosine_similarity(vec[-1], vec[:-1]).flatten()
-    idxs = sims.argsort()[::-1][:3]
-    return [names[i] for i in idxs if sims[i] > 0.1]
+    results = process.extract(query, names, limit=3)
+    return [name for name, score in results if score >= 80]
 
 
 def _load_year_df(year: int) -> pd.DataFrame:
@@ -128,4 +125,4 @@ def generate_answer(question: str) -> str:
     prefix = ""
     if _has_detail_request(question):
         prefix = "세부사항은 해당 학과 공지사항을 직접 확인하셔야 합니다.\n"
-    return f"{prefix}{year}학년도 {dept} 졸업요건 예시"
+    return f"{prefix}{year}학년도 {dept} 졸업요건"
