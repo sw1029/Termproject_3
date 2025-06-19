@@ -11,13 +11,15 @@ OUT_DIR = Path('data/raw/academic_calendar')
 
 
 def _load_items(path: Path):
+    """Return list of events or ``None`` when JSON decoding fails."""
     if not path.exists():
         return []
     with path.open(encoding='utf-8') as f:
         try:
             return json.load(f).get('items', [])
         except json.JSONDecodeError:
-            return []
+            # Invalid JSON indicates an outdated cache. Trigger a recrawl.
+            return None
 
 
 def _parse_year_month_day(q: str):
@@ -46,7 +48,11 @@ def _search_fallback(question: str) -> str | None:
 
 
 def get_context(question: str) -> tuple[list[dict], tuple[int|None,int|None,int|None], str]:
-    """Return matching academic calendar events as context."""
+    """Return matching academic calendar events as context.
+
+    If cached JSON data is missing or corrupted, the crawler will attempt
+    to fetch and rebuild the cache before continuing.
+    """
     ensure_offline_db()
     year, month, day, status = _parse_year_month_day(question)
     year = year or datetime.now().year
@@ -55,6 +61,12 @@ def get_context(question: str) -> tuple[list[dict], tuple[int|None,int|None,int|
         crawler = AcademicCalendarCrawler(OUT_DIR, year)
         crawler.run()
     items = _load_items(path)
+    if items is None or not items:
+        crawler = AcademicCalendarCrawler(OUT_DIR, year)
+        if crawler.run():
+            items = _load_items(path) or []
+        else:
+            items = []
 
     if _has_update_request(question):
         prev_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in items}
