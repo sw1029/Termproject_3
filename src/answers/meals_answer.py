@@ -176,12 +176,12 @@ def get_context(question: str) -> tuple[list[dict], str, bool]:
     prev_items = _load_items(path)
 
     if not path.exists():
-        logger.info("'%s' 날짜의 식단 정보가 로컬에 없어 새로 수집합니다.", date)
+        logger.info(f"{date} 날짜의 식단 정보가 로컬에 없어 새로 수집합니다.", date)
         MealsCrawler = _load_meals_crawler()
         crawler = MealsCrawler(OUT_DIR, date)
         crawler.run()
     else:
-        logger.info("'%s' 날짜의 로컬 식단 정보를 사용합니다.", date)
+        logger.info(f"{date} 날짜의 로컬 식단 정보를 사용합니다.", date)
 
     items = _load_items(path)
 
