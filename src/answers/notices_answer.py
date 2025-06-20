@@ -28,6 +28,10 @@ def _load_notice_crawler():
 from ..retrieval.rag_pipeline import HybridRetriever
 from . import ensure_offline_db
 
+# Cache for notice rows and crawler status
+_CRAWLED_ONCE = False
+_ROWS_CACHE: list[dict] | None = None
+
 OUT_DIR = settings.data_dir / 'raw/notices'
 
 
@@ -62,12 +66,24 @@ def _search_fallback(question: str) -> str | None:
 
 def get_context(question: str) -> list[dict]:
     """Return notice rows related to the question."""
+    global _CRAWLED_ONCE, _ROWS_CACHE
     ensure_offline_db()
-    prev_rows = _load_rows()
-    NoticeCrawler = _load_notice_crawler()
-    crawler = NoticeCrawler(OUT_DIR)
-    crawler.run()
-    rows = _load_rows()
+
+    # Load cached rows if not already loaded
+    if _ROWS_CACHE is None:
+        _ROWS_CACHE = _load_rows()
+
+    prev_rows = _ROWS_CACHE
+
+    # Perform crawling only once per runtime to refresh the cache
+    if not _CRAWLED_ONCE:
+        NoticeCrawler = _load_notice_crawler()
+        crawler = NoticeCrawler(OUT_DIR)
+        crawler.run()
+        _CRAWLED_ONCE = True
+        _ROWS_CACHE = _load_rows()
+
+    rows = _ROWS_CACHE
 
     if _has_update_request(question):
         prev_set = {json.dumps(r, ensure_ascii=False, sort_keys=True) for r in prev_rows}
