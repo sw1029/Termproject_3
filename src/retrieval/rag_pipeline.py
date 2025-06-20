@@ -118,16 +118,4 @@ class AnswerGenerator:
                 yield token
             return
 
-        if self.model_type == "openai" and self.client:
-            # Simple, non-streaming fallback for OpenAI
-            response = self.client.chat.completions.create(
-                model=settings.openai_model_name,
-                messages=[
-                    {"role": "system", "content": "당신은 충남대학교 정보를 안내하는 챗봇입니다."},
-                    {"role": "user", "content": prompt},
-                ],
-            )
-            yield response.choices[0].message.content.strip()
-            return
-
         yield "답변 생성 모델이 올바르게 설정되지 않았습니다."
