@@ -99,15 +99,11 @@ def get_context(question: str) -> list[dict]:
         names = [r.get('dept', '') for r in records]
         if not names:
             return []
-        scored = process.extract(dept, names, limit=3)
-        result = []
-        for name, score in scored:
-            if score >= 80:
-                for r in records:
-                    if r.get('dept', '') == name:
-                        result.append(r)
-                        break
-        return result
+        best = process.extractOne(dept, names)
+        if not best:
+            return []
+        best_name, _ = best
+        return [r for r in records if r.get('dept', '') == best_name]
 
     return _filter(rows)
 

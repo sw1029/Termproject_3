@@ -2,7 +2,7 @@
 set -e
 
 compile_all() {
-  python -m py_compile src/answers/*.py
+  python3 -m py_compile src/answers/*.py
 }
 
 run_sample() {
@@ -10,7 +10,7 @@ run_sample() {
   local question="$2"
 
   echo "$module -- $question"
-  python - <<PY
+  python3 - <<PY
 import $module as mod
 print(mod.generate_answer("""$question"""))
 PY

@@ -49,8 +49,10 @@ def get_context(question: str) -> list[dict]:
             new_items = _load_items(path)
             new_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in new_items}
             diff = [json.loads(s) for s in new_set - prev_set]
-            return diff
-        return []
+            if diff:
+                return diff
+            return new_items
+        return items
 
     bus_type = _parse_type(question)
 
