@@ -186,13 +186,13 @@ def get_context(question: str) -> tuple[list[dict], str, bool]:
     items = _load_items(path)
 
     if _is_weekend(date):
-        return [{"message": "주말에는 운영하지 않습니다."}]
+        return [{"message": "주말에는 운영하지 않습니다."}], date, True
 
     if _has_update_request(question):
         prev_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in prev_items}
         new_set = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in items}
         diff = [json.loads(s) for s in new_set - prev_set]
-        return diff
+        return diff, date, True
 
     meal_type = _parse_meal(question)
 
