@@ -94,6 +94,12 @@ def _has_detail_request(q: str) -> bool:
     return any(k in q for k in keywords)
 
 
+def _is_credit_request(q: str) -> bool:
+    """Return True if the question specifically asks about required credits."""
+    keywords = ["학점"]
+    return any(k in q for k in keywords)
+
+
 def get_context(question: str):
     """Return graduation requirement table rows matching the question."""
     ensure_offline_db()
@@ -117,6 +123,8 @@ def get_context(question: str):
 
 def generate_answer(question: str) -> str:
     context = get_context(question)
+    if not _is_credit_request(question):
+        return "졸업 필요 학점 외의 정보는 각 학과에 문의하시길 바랍니다."
     if not context:
         return "졸업요건 정보를 찾지 못했습니다."
     sample = context[0]

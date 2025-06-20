@@ -197,7 +197,7 @@ def get_context(question: str) -> tuple[list[dict], str, bool]:
     meal_type = _parse_meal(question)
 
     def _filter(records: list[dict]) -> list[dict]:
-        filtered = records
+        filtered = [it for it in records if it.get("menu") != "메뉴운영내역"]
         if cafeteria is not None:
             filtered = [it for it in filtered if it.get("cafeteria") == cafeteria]
         if meal_type is not None:
@@ -231,6 +231,9 @@ def generate_answer(question: str) -> str:
 
     if not exact:
         dt = datetime.strptime(date, "%Y%m%d").strftime("%Y-%m-%d")
+        menus = ', '.join(it.get('menu', '') for it in context[:3])
+        if menus:
+            return f"{dt} 일을 말씀하시는 게 맞을까요? 찾은 식단 정보: {menus} 등"
         return f"{dt} 일을 말씀하시는 게 맞을까요?"
 
     menus = ', '.join(it.get('menu', '') for it in context[:3])
