@@ -205,6 +205,8 @@ def get_context(question: str) -> tuple[list[dict], str, bool]:
         return filtered
 
     filtered = _filter(items)
+    if meal_type is None and not _is_weekend(date):
+        filtered = sorted(filtered, key=lambda x: x.get("menu") == "운영안함")
     if not filtered or all(it.get("menu") == "운영안함" for it in filtered):
         prev_year = str(int(date[:4]) - 1) + date[4:]
         path_prev = OUT_DIR / f"{prev_year}.json"

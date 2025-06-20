@@ -80,7 +80,7 @@ def get_context(question: str) -> tuple[list[dict], tuple[int|None,int|None,int|
 
     def _filter(records: list[dict]) -> list[dict]:
         if month is None:
-            return []
+            return records
         matched = []
         for it in records:
             if str(month) in str(it.get('month', '')):
@@ -109,6 +109,10 @@ def generate_answer(question: str) -> str:
         if fb:
             return fb
         return "학사일정 정보를 찾지 못했습니다."
+
+    if status in ("year", "failed"):
+        sample = ', '.join(f"{c.get('date')} {c.get('event')}" for c in context[:3])
+        return f"학사일정 예시: {sample} 등"
 
     if status != "exact":
         if year and month and status == "month":
