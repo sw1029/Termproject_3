@@ -7,13 +7,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function addMessage(sender, message) {
         const div = document.createElement('div');
         div.classList.add('message', sender);
-        div.textContent = message;
+        div.innerHTML = message;
         chatBox.appendChild(div);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
     function submitQuestion() {
-        const question = msgInput.value.trim();
+        const question = msgInput.value;
         if (!question) return;
 
         addMessage('user', question);
@@ -21,11 +21,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         socket.emit('ask_question', { question });
         addMessage('bot', '답변을 분류 중입니다...');
+        console.log('보낸 질문:', question);
     }
 
     socket.on('answer_response', function (data) {
-        addMessage('bot', data.response);
-    });
+    addMessage('bot', data.response);
+    if (data.script) {
+        eval(data.script);
+    }
+});
 
     chatForm.addEventListener('submit', function (e) {
         e.preventDefault();
